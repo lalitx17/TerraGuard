@@ -44,7 +44,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 const cloudConfigs = [
   {
     id: "aws-123",
-    name: "Production AWS",
+    configName: "Production AWS",
     provider: "aws",
     criticalCount: 2,
     highCount: 4,
@@ -52,7 +52,7 @@ const cloudConfigs = [
   },
   {
     id: "azure-456",
-    name: "Development Azure",
+    configName: "Development Azure",
     provider: "azure",
     criticalCount: 0,
     highCount: 1,
@@ -66,14 +66,14 @@ export function AppSidebar() {
   const [currentTab, setCurrentTab] = useState("basic");
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
+    configName: "",
     provider: "aws",
     access_key: "",
     secret_key: "",
     region: "",
   });
   const [formErrors, setFormErrors] = useState({
-    name: false,
+    configName: false,
     access_key: false,
     secret_key: false,
     region: false,
@@ -97,7 +97,7 @@ export function AppSidebar() {
 
   const validateForm = () => {
     const errors = {
-      name: !formData.name,
+      configName: !formData.configName,
       access_key: !formData.access_key,
       secret_key: !formData.secret_key,
       region: !formData.region,
@@ -111,85 +111,36 @@ export function AppSidebar() {
     setCurrentTab(value);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
       return;
     }
+    console.log(formData);
 
     setIsLoading(true);
     setExtractedConfig(null);
 
-    // Simulate API call to extract configuration
-    setTimeout(() => {
-      // Generate random dummy data
-      const extractedData = {
-        resources: Math.floor(Math.random() * 100) + 20,
-        services: [],
-      };
-
-      // Add random services based on provider
-      if (formData.provider === "aws") {
-        const awsServices = [
-          "EC2",
-          "S3",
-          "RDS",
-          "Lambda",
-          "CloudFront",
-          "IAM",
-          "VPC",
-        ];
-        const numServices = Math.floor(Math.random() * 5) + 2;
-        for (let i = 0; i < numServices; i++) {
-          const randomIndex = Math.floor(Math.random() * awsServices.length);
-          if (!extractedData.services.includes(awsServices[randomIndex])) {
-            extractedData.services.push(awsServices[randomIndex]);
-          }
-        }
-      } else if (formData.provider === "azure") {
-        const azureServices = [
-          "Virtual Machines",
-          "Storage Accounts",
-          "App Services",
-          "SQL Databases",
-          "Cosmos DB",
-          "Functions",
-        ];
-        const numServices = Math.floor(Math.random() * 4) + 2;
-        for (let i = 0; i < numServices; i++) {
-          const randomIndex = Math.floor(Math.random() * azureServices.length);
-          if (!extractedData.services.includes(azureServices[randomIndex])) {
-            extractedData.services.push(azureServices[randomIndex]);
-          }
-        }
-      } else {
-        const gcpServices = [
-          "Compute Engine",
-          "Cloud Storage",
-          "Cloud SQL",
-          "App Engine",
-          "BigQuery",
-          "Kubernetes Engine",
-        ];
-        const numServices = Math.floor(Math.random() * 4) + 2;
-        for (let i = 0; i < numServices; i++) {
-          const randomIndex = Math.floor(Math.random() * gcpServices.length);
-          if (!extractedData.services.includes(gcpServices[randomIndex])) {
-            extractedData.services.push(gcpServices[randomIndex]);
-          }
-        }
-      }
-
-      setExtractedConfig(extractedData);
+    try {
+      const response = await fetch("api/terraloads/getCloudConfig", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+    } catch (error) {
+      console.error("Error:", error);
+    } finally {
       setIsLoading(false);
-    }, 3000);
+    }
   };
 
   const addCloudConfig = () => {
     const newConfig = {
       id: `${formData.provider}-${Date.now()}`,
-      name: formData.name,
+      configName: formData.configName,
       provider: formData.provider,
       criticalCount: Math.floor(Math.random() * 3),
       highCount: Math.floor(Math.random() * 5) + 2,
@@ -201,7 +152,7 @@ export function AppSidebar() {
     setIsLoading(false);
     setExtractedConfig(null);
     setFormData({
-      name: "",
+      configName: "",
       provider: "aws",
       access_key: "",
       secret_key: "",
@@ -215,14 +166,14 @@ export function AppSidebar() {
     setIsLoading(false);
     setExtractedConfig(null);
     setFormData({
-      name: "",
+      configName: "",
       provider: "aws",
       access_key: "",
       secret_key: "",
       region: "",
     });
     setFormErrors({
-      name: false,
+      configName: false,
       access_key: false,
       secret_key: false,
       region: false,
@@ -260,7 +211,7 @@ export function AppSidebar() {
                   <SidebarMenuItem key={config.id}>
                     <SidebarMenuButton asChild>
                       <Link href={`/cloud/${config.id}`}>
-                        <span>{config.name}</span>
+                        <span>{config.configName}</span>
                       </Link>
                     </SidebarMenuButton>
                     <SidebarMenuBadge className="bg-destructive text-destructive-foreground">
@@ -324,16 +275,18 @@ export function AppSidebar() {
                 <TabsContent value="basic" className="mt-4">
                   <div className="grid gap-4 py-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="name">Configuration Name</Label>
+                      <Label htmlFor="configName">Configuration Name</Label>
                       <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
+                        id="configName"
+                        name="configName"
+                        value={formData.configName}
                         onChange={handleInputChange}
                         placeholder="Production Environment"
-                        className={formErrors.name ? "border-destructive" : ""}
+                        className={
+                          formErrors.configName ? "border-destructive" : ""
+                        }
                       />
-                      {formErrors.name && (
+                      {formErrors.configName && (
                         <p className="text-sm text-destructive">
                           Configuration name is required
                         </p>

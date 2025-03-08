@@ -2,41 +2,26 @@ import { exec } from "child_process";
 import fs from "fs";
 import { promisify } from "util";
 import path from "path";
-import type { NextApiRequest, NextApiResponse } from "next";
-import generateTerraformConfig from "../../lib/generateTerraformConfig";
+import { NextResponse } from "next/server";
 
 const execPromise = promisify(exec);
 
 interface credentialsRequest {
   provider: string;
-  accessKey: string;
-  secretKey: string;
+  access_key: string;
+  secret_key: string;
   region: string;
 }
 
-interface CloudConfigResponse {
-  config?: string;
-  message?: string;
-  error?: string;
-}
-
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse<CloudConfigResponse>,
-) {
-  if (req.method != "POST") {
-    res.status(405).json({ message: "Method Not Allowed" });
-    return;
-  }
-
+export async function POST(request: Request) {
   try {
-    const { provider, accessKey, secretKey, region } =
-      req.body as credentialsRequest;
+    const { provider, access_key, secret_key, region } =
+      (await request.json()) as credentialsRequest;
 
     const env: NodeJS.ProcessEnv = {
       ...process.env,
-      AWS_ACCESS_KEY_ID: accessKey,
-      AWS_SECRET_ACCESS_KEY: secretKey,
+      AWS_ACCESS_KEY_ID: access_key,
+      AWS_SECRET_ACCESS_KEY: secret_key,
       AWS_DEFAULT_REGION: region,
     };
 
@@ -50,7 +35,7 @@ export default async function handler(
     const destinationDir = path.join(process.cwd(), "configs");
     fs.mkdirSync(destinationDir, { recursive: true });
 
-    const terraformerCommand = `terraformer import aws --resources=instance,vpc --access-key=${accessKey} --secret-key=${secretKey} --region=${region} --path-output=${outputDir}`;
+    const terraformerCommand = `terraformer import aws --resources=instance,vpc --access-key=${access_key} --secret-key=${secret_key} --region=${region} --path-output=${outputDir}`;
     console.log(`Running command: ${terraformerCommand}`);
 
     await execPromise(terraformerCommand, { env });
@@ -64,14 +49,14 @@ export default async function handler(
 
     const tfConfig = fs.readFileSync(tfFilePath, "utf-8");
 
-    res.status(200).json({ config: tfConfig });
+    return NextResponse.json({ config: tfConfig });
   } catch (error) {
     console.error("Error generating configuration:", error);
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
-    res.status(500).json({
-      message: "Failed to get existing configuration",
-      error: errorMessage,
-    });
+    return NextResponse.json(
+      { error: `Failed to generate configuration: ${errorMessage}` },
+      { status: 500 },
+    );
   }
 }
