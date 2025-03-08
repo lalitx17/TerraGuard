@@ -1,14 +1,27 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { AlertTriangle, ArrowRight, CheckCircle, ShieldAlert, ShieldCheck } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import {
+  AlertTriangle,
+  ArrowRight,
+  CheckCircle,
+  ShieldAlert,
+  ShieldCheck,
+} from "lucide-react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
-import { Container } from "@/components/ui/container"
-import { usePathname } from "next/navigation"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Container } from "@/components/ui/container";
+import { usePathname } from "next/navigation";
 
 // Mock data for cloud configurations
 const cloudConfigs = {
@@ -25,7 +38,8 @@ const cloudConfigs = {
       {
         id: "aws-issue-1",
         title: "S3 Bucket Publicly Accessible",
-        description: "The S3 bucket 'company-data' is configured with public read access, exposing sensitive data.",
+        description:
+          "The S3 bucket 'company-data' is configured with public read access, exposing sensitive data.",
         severity: "critical",
         resource: "s3://company-data",
         provider: "AWS",
@@ -42,7 +56,8 @@ const cloudConfigs = {
       {
         id: "aws-issue-3",
         title: "Unencrypted Database",
-        description: "RDS instance 'production-db' is not configured with encryption at rest.",
+        description:
+          "RDS instance 'production-db' is not configured with encryption at rest.",
         severity: "high",
         resource: "rds:production-db",
         provider: "AWS",
@@ -62,7 +77,8 @@ const cloudConfigs = {
       {
         id: "azure-issue-1",
         title: "Network Security Group Too Permissive",
-        description: "NSG allows inbound traffic from any IP address on port 22 (SSH).",
+        description:
+          "NSG allows inbound traffic from any IP address on port 22 (SSH).",
         severity: "high",
         resource: "nsg:dev-servers",
         provider: "Azure",
@@ -90,7 +106,8 @@ const cloudConfigs = {
       {
         id: "gcp-issue-1",
         title: "Missing Resource Tags",
-        description: "Multiple resources are missing required organization tags for cost allocation.",
+        description:
+          "Multiple resources are missing required organization tags for cost allocation.",
         severity: "low",
         resource: "multiple",
         provider: "GCP",
@@ -98,7 +115,8 @@ const cloudConfigs = {
       {
         id: "gcp-issue-2",
         title: "Default Service Account with Excessive Permissions",
-        description: "Default service account has project editor role which grants excessive permissions.",
+        description:
+          "Default service account has project editor role which grants excessive permissions.",
         severity: "critical",
         resource: "iam:default-service-account",
         provider: "GCP",
@@ -119,7 +137,8 @@ const cloudConfigs = {
       {
         id: "aws-123-issue-1",
         title: "Root Account Access Keys Active",
-        description: "The root account has active access keys which is a security risk.",
+        description:
+          "The root account has active access keys which is a security risk.",
         severity: "critical",
         resource: "iam::root",
         provider: "AWS",
@@ -127,7 +146,8 @@ const cloudConfigs = {
       {
         id: "aws-123-issue-2",
         title: "Security Groups Allow All Traffic",
-        description: "Multiple security groups allow all inbound traffic on port 22.",
+        description:
+          "Multiple security groups allow all inbound traffic on port 22.",
         severity: "high",
         resource: "sg:multiple",
         provider: "AWS",
@@ -147,33 +167,35 @@ const cloudConfigs = {
       {
         id: "azure-456-issue-1",
         title: "Virtual Network Peering Not Secured",
-        description: "Virtual network peering is not secured with proper gateway transit settings.",
+        description:
+          "Virtual network peering is not secured with proper gateway transit settings.",
         severity: "high",
         resource: "vnet:dev-network",
         provider: "Azure",
       },
     ],
   },
-}
+};
 
-export default function CloudConfigPage({ params }: { params: { id: string } }) {
-  const [config, setConfig] = useState<any>(null)
-  const pathname = usePathname()
+export default function CloudConfigPage() {
+  const [config, setConfig] = useState<any>(null);
+  const pathname = usePathname();
+  const params = useParams();
+  const { id } = params as { id: string };
 
   // Set the page title in the header
   useEffect(() => {
-    const configId = params.id
-    const currentConfig = cloudConfigs[configId as keyof typeof cloudConfigs]
+    if (!id) return;
 
+    const currentConfig = cloudConfigs[id as keyof typeof cloudConfigs];
     if (currentConfig) {
-      setConfig(currentConfig)
+      setConfig(currentConfig);
 
-      // Update the title using the global method
       if (window.updatePageTitle) {
-        window.updatePageTitle(currentConfig.name)
+        window.updatePageTitle(currentConfig.name);
       }
     }
-  }, [params.id])
+  }, [id]);
 
   if (!config) {
     return (
@@ -182,7 +204,7 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
           <div className="p-8">Loading configuration...</div>
         </Container>
       </div>
-    )
+    );
   }
 
   return (
@@ -199,41 +221,57 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Critical Issues</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Critical Issues
+              </CardTitle>
               <ShieldAlert className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{config.criticalCount}</div>
-              <p className="text-xs text-muted-foreground">Requires immediate attention</p>
+              <p className="text-xs text-muted-foreground">
+                Requires immediate attention
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">High Severity</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                High Severity
+              </CardTitle>
               <AlertTriangle className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{config.highCount}</div>
-              <p className="text-xs text-muted-foreground">Should be addressed soon</p>
+              <p className="text-xs text-muted-foreground">
+                Should be addressed soon
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Low Severity</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Low Severity
+              </CardTitle>
               <ShieldCheck className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{config.lowCount}</div>
-              <p className="text-xs text-muted-foreground">Best practice recommendations</p>
+              <p className="text-xs text-muted-foreground">
+                Best practice recommendations
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Secure Resources</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Secure Resources
+              </CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{config.securePercentage}%</div>
+              <div className="text-2xl font-bold">
+                {config.securePercentage}%
+              </div>
               <Progress value={config.securePercentage} className="mt-2" />
             </CardContent>
           </Card>
@@ -250,13 +288,18 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
             <Card>
               <CardHeader>
                 <CardTitle>Security Issues</CardTitle>
-                <CardDescription>All detected issues in {config.name}</CardDescription>
+                <CardDescription>
+                  All detected issues in {config.name}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues.map((issue: any) => (
-                      <div key={issue.id} className="flex items-start gap-4 rounded-lg border p-4">
+                      <div
+                        key={issue.id}
+                        className="flex items-start gap-4 rounded-lg border p-4"
+                      >
                         {issue.severity === "critical" ? (
                           <ShieldAlert className="mt-0.5 h-5 w-5 text-destructive" />
                         ) : issue.severity === "high" ? (
@@ -265,10 +308,16 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
                           <ShieldCheck className="mt-0.5 h-5 w-5 text-yellow-500" />
                         )}
                         <div className="flex-1 space-y-1">
-                          <p className="font-medium leading-none">{issue.title}</p>
-                          <p className="text-sm text-muted-foreground">{issue.description}</p>
+                          <p className="font-medium leading-none">
+                            {issue.title}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {issue.description}
+                          </p>
                           <div className="flex items-center pt-2">
-                            <span className="text-xs text-muted-foreground">{issue.resource}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {issue.resource}
+                            </span>
                           </div>
                         </div>
                         <Button variant="outline" size="sm">
@@ -286,7 +335,9 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
             <Card>
               <CardHeader>
                 <CardTitle>Critical Security Issues</CardTitle>
-                <CardDescription>Issues that require immediate attention</CardDescription>
+                <CardDescription>
+                  Issues that require immediate attention
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -294,13 +345,22 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
                     {config.issues
                       .filter((issue: any) => issue.severity === "critical")
                       .map((issue: any) => (
-                        <div key={issue.id} className="flex items-start gap-4 rounded-lg border p-4">
+                        <div
+                          key={issue.id}
+                          className="flex items-start gap-4 rounded-lg border p-4"
+                        >
                           <ShieldAlert className="mt-0.5 h-5 w-5 text-destructive" />
                           <div className="flex-1 space-y-1">
-                            <p className="font-medium leading-none">{issue.title}</p>
-                            <p className="text-sm text-muted-foreground">{issue.description}</p>
+                            <p className="font-medium leading-none">
+                              {issue.title}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {issue.description}
+                            </p>
                             <div className="flex items-center pt-2">
-                              <span className="text-xs text-muted-foreground">{issue.resource}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {issue.resource}
+                              </span>
                             </div>
                           </div>
                           <Button variant="outline" size="sm">
@@ -317,7 +377,9 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
             <Card>
               <CardHeader>
                 <CardTitle>High Severity Issues</CardTitle>
-                <CardDescription>Issues that should be addressed soon</CardDescription>
+                <CardDescription>
+                  Issues that should be addressed soon
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -325,13 +387,22 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
                     {config.issues
                       .filter((issue: any) => issue.severity === "high")
                       .map((issue: any) => (
-                        <div key={issue.id} className="flex items-start gap-4 rounded-lg border p-4">
+                        <div
+                          key={issue.id}
+                          className="flex items-start gap-4 rounded-lg border p-4"
+                        >
                           <AlertTriangle className="mt-0.5 h-5 w-5 text-orange-500" />
                           <div className="flex-1 space-y-1">
-                            <p className="font-medium leading-none">{issue.title}</p>
-                            <p className="text-sm text-muted-foreground">{issue.description}</p>
+                            <p className="font-medium leading-none">
+                              {issue.title}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {issue.description}
+                            </p>
                             <div className="flex items-center pt-2">
-                              <span className="text-xs text-muted-foreground">{issue.resource}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {issue.resource}
+                              </span>
                             </div>
                           </div>
                           <Button variant="outline" size="sm">
@@ -356,13 +427,22 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
                     {config.issues
                       .filter((issue: any) => issue.severity === "low")
                       .map((issue: any) => (
-                        <div key={issue.id} className="flex items-start gap-4 rounded-lg border p-4">
+                        <div
+                          key={issue.id}
+                          className="flex items-start gap-4 rounded-lg border p-4"
+                        >
                           <ShieldCheck className="mt-0.5 h-5 w-5 text-yellow-500" />
                           <div className="flex-1 space-y-1">
-                            <p className="font-medium leading-none">{issue.title}</p>
-                            <p className="text-sm text-muted-foreground">{issue.description}</p>
+                            <p className="font-medium leading-none">
+                              {issue.title}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {issue.description}
+                            </p>
                             <div className="flex items-center pt-2">
-                              <span className="text-xs text-muted-foreground">{issue.resource}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {issue.resource}
+                              </span>
                             </div>
                           </div>
                           <Button variant="outline" size="sm">
@@ -378,6 +458,5 @@ export default function CloudConfigPage({ params }: { params: { id: string } }) 
         </Tabs>
       </Container>
     </div>
-  )
+  );
 }
-
