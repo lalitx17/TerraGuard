@@ -18,38 +18,100 @@ export async function POST(request: Request) {
     const { provider, access_key, secret_key, region } =
       (await request.json()) as credentialsRequest;
 
-    const env: NodeJS.ProcessEnv = {
-      ...process.env,
-      AWS_ACCESS_KEY_ID: access_key,
-      AWS_SECRET_ACCESS_KEY: secret_key,
-      AWS_DEFAULT_REGION: region,
-    };
-
-    const outputDir = path.join(
+    // Create a working directory
+    const workingDir = path.join(
       process.cwd(),
       "tmp",
       `terraformer-${Date.now()}`,
     );
-    fs.mkdirSync(outputDir, { recursive: true });
+    fs.mkdirSync(workingDir, { recursive: true });
 
+    // Create AWS credentials file
+    const awsCredentialsContent = `
+[default]
+aws_access_key_id = ${access_key}
+aws_secret_access_key = ${secret_key}
+region = ${region}
+`;
+
+    const awsConfigPath = path.join(process.cwd(), "tmp", ".aws-config-temp");
+    fs.writeFileSync(awsConfigPath, awsCredentialsContent);
+
+    // Create version.tf file
+    const versionTfContent = `
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "${region}"
+}
+`;
+
+    const versionTfPath = path.join(workingDir, "version.tf");
+    fs.writeFileSync(versionTfPath, versionTfContent);
+
+    // Set environment variables for AWS credentials
+    const env = {
+      ...process.env,
+      AWS_ACCESS_KEY_ID: access_key,
+      AWS_SECRET_ACCESS_KEY: secret_key,
+      AWS_REGION: region,
+      AWS_CONFIG_FILE: awsConfigPath,
+      AWS_SHARED_CREDENTIALS_FILE: awsConfigPath,
+    };
+
+    // Create destination directory for configs
     const destinationDir = path.join(process.cwd(), "configs");
     fs.mkdirSync(destinationDir, { recursive: true });
 
-    const terraformerCommand = `terraformer import aws --resources=instance,vpc --access-key=${access_key} --secret-key=${secret_key} --region=${region} --path-output=${outputDir}`;
+    // Run terraform init
+    console.log("Running terraform init...");
+    await execPromise("terraform init", {
+      cwd: workingDir,
+      env,
+    });
+
+    // Run terraformer
+    const terraformerCommand = `terraformer import aws --resources=s3 --regions=${region}`;
     console.log(`Running command: ${terraformerCommand}`);
 
-    await execPromise(terraformerCommand, { env });
+    const { stdout, stderr } = await execPromise(terraformerCommand, {
+      cwd: workingDir,
+      env,
+    });
+    console.log("Terraformer stdout:", stdout);
 
-    const tfFilePath = path.join(outputDir, "aws_instance.tf");
-    const destinationFilePath = path.join(destinationDir, "aws_instance.tf");
+    if (stderr) {
+      console.warn("Terraformer stderr:", stderr);
+    }
 
-    fs.copyFileSync(tfFilePath, destinationFilePath);
+    // Copy generated files to destination directory
+    const files = fs.readdirSync(workingDir);
+    const tfFiles = files.filter(
+      (file) => file.endsWith(".tf") || file.endsWith(".json"),
+    );
 
-    fs.rmSync(outputDir, { recursive: true, force: true });
+    for (const file of tfFiles) {
+      const sourcePath = path.join(workingDir, file);
+      const destPath = path.join(destinationDir, file);
+      fs.copyFileSync(sourcePath, destPath);
+    }
 
-    const tfConfig = fs.readFileSync(tfFilePath, "utf-8");
+    // Clean up temporary files
+    // fs.rmSync(workingDir, { recursive: true, force: true });
+    fs.unlinkSync(awsConfigPath);
 
-    return NextResponse.json({ config: tfConfig });
+    return NextResponse.json({
+      success: true,
+      message: "Terraform configuration generated successfully",
+      files: tfFiles,
+    });
   } catch (error) {
     console.error("Error generating configuration:", error);
     const errorMessage =
