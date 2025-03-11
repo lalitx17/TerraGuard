@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowRight,
@@ -21,7 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { usePathname } from "next/navigation";
+import { AddCredentialsDialog } from "@/components/add-credentials-dialog";
 
 // Mock data for cloud configurations
 const cloudConfigs = {
@@ -177,31 +178,89 @@ const cloudConfigs = {
   },
 };
 
+interface CloudConfig {
+  id: string;
+  name: string;
+  provider: string;
+  criticalCount?: number;
+  highCount?: number;
+  lowCount?: number;
+  resources?: number;
+  securePercentage?: number;
+  issues?: any[];
+}
+
 export default function CloudConfigPage() {
-  const [config, setConfig] = useState<any>(null);
-  const pathname = usePathname();
+  const router = useRouter();
+  const [config, setConfig] = useState<CloudConfig | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const params = useParams();
   const { id } = params as { id: string };
 
-  // Set the page title in the header
   useEffect(() => {
-    if (!id) return;
+    const configId = params.id;
 
-    const currentConfig = cloudConfigs[id as keyof typeof cloudConfigs];
-    if (currentConfig) {
-      setConfig(currentConfig);
+    // Check if this is a pending config
+    const pendingConfigs = JSON.parse(
+      localStorage.getItem("pendingConfigs") || "[]",
+    );
+    const isPendingConfig = pendingConfigs.some(
+      (c: CloudConfig) => c.id === configId,
+    );
 
-      if (window.updatePageTitle) {
-        window.updatePageTitle(currentConfig.name);
+    if (isPendingConfig) {
+      // Get the pending config details
+      const pendingConfig = pendingConfigs.find(
+        (c: CloudConfig) => c.id === configId,
+      );
+      setConfig(pendingConfig);
+      setIsPending(true);
+      setIsCredentialsDialogOpen(true);
+    } else {
+      // Get the regular config
+      const currentConfig = cloudConfigs[configId as keyof typeof cloudConfigs];
+
+      if (currentConfig) {
+        setConfig(currentConfig);
+
+        // Update the title using the global method
+        if (window.updatePageTitle) {
+          window.updatePageTitle(currentConfig.name);
+        }
       }
     }
-  }, [id]);
+  }, [params.id]);
 
   if (!config) {
     return (
       <div className="w-full py-6">
         <Container>
           <div className="p-8">Loading configuration...</div>
+        </Container>
+      </div>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <div className="w-full py-6">
+        <Container>
+          <div className="flex flex-col items-center justify-center p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">{config.name}</h2>
+            <p className="text-muted-foreground mb-6">
+              This configuration requires credentials to extract resources.
+            </p>
+            <Button onClick={() => setIsCredentialsDialogOpen(true)}>
+              Add Credentials
+            </Button>
+
+            <AddCredentialsDialog
+              open={isCredentialsDialogOpen}
+              onOpenChange={setIsCredentialsDialogOpen}
+              config={config}
+            />
+          </div>
         </Container>
       </div>
     );
@@ -295,7 +354,7 @@ export default function CloudConfigPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid gap-4">
-                    {config.issues.map((issue: any) => (
+                    {config.issues?.map((issue: any) => (
                       <div
                         key={issue.id}
                         className="flex items-start gap-4 rounded-lg border p-4"
@@ -343,7 +402,7 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      .filter((issue: any) => issue.severity === "critical")
+                      ?.filter((issue: any) => issue.severity === "critical")
                       .map((issue: any) => (
                         <div
                           key={issue.id}
@@ -385,7 +444,7 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      .filter((issue: any) => issue.severity === "high")
+                      ?.filter((issue: any) => issue.severity === "high")
                       .map((issue: any) => (
                         <div
                           key={issue.id}
@@ -425,7 +484,7 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      .filter((issue: any) => issue.severity === "low")
+                      ?.filter((issue: any) => issue.severity === "low")
                       .map((issue: any) => (
                         <div
                           key={issue.id}
@@ -457,6 +516,12 @@ export default function CloudConfigPage() {
           </TabsContent>
         </Tabs>
       </Container>
+
+      <AddCredentialsDialog
+        open={isCredentialsDialogOpen}
+        onOpenChange={setIsCredentialsDialogOpen}
+        config={config}
+      />
     </div>
   );
 }

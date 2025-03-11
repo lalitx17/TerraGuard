@@ -1,30 +1,11 @@
 "use client";
 
-import type React from "react";
-
-import { useState } from "react";
-import { Home, Loader2, Plus, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Plus, Settings, User } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Sidebar,
   SidebarContent,
@@ -39,161 +20,95 @@ import {
   SidebarMenuButton,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AddCloudConfigDialog } from "./add-cloud-config-dialog";
+import { AddCredentialsDialog } from "./add-credentials-dialog";
 
-const cloudConfigs = [
-  {
-    id: "aws-123",
-    configName: "Production AWS",
+// Mock data for cloud configurations
+const cloudConfigs: Record<string, CloudConfig> = {
+  "aws-prod": {
+    id: "aws-prod",
+    name: "AWS Production",
     provider: "aws",
-    criticalCount: 2,
-    highCount: 4,
-    lowCount: 7,
+    criticalCount: 3,
+    highCount: 7,
   },
-  {
-    id: "azure-456",
-    configName: "Development Azure",
+  "azure-dev": {
+    id: "azure-dev",
+    name: "Azure Development",
     provider: "azure",
-    criticalCount: 0,
-    highCount: 1,
-    lowCount: 3,
+    criticalCount: 1,
+    highCount: 4,
   },
-];
+  "gcp-staging": {
+    id: "gcp-staging",
+    name: "GCP Staging",
+    provider: "gcp",
+    criticalCount: 2,
+    highCount: 5,
+  },
+};
+
+interface CloudConfig {
+  id: string;
+  name: string;
+  provider: string;
+  criticalCount?: number;
+  highCount?: number;
+}
 
 export function AppSidebar() {
-  const [configs, setConfigs] = useState(cloudConfigs);
+  const pathname = usePathname();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState("basic");
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    configName: "",
-    provider: "aws",
-    access_key: "",
-    secret_key: "",
-    region: "",
+  const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
+  const [selectedConfig, setSelectedConfig] = useState<CloudConfig | null>(
+    null,
+  );
+  const [pendingConfigs, setPendingConfigs] = useState<CloudConfig[]>([]);
+  const [allConfigs, setAllConfigs] = useState<Record<string, CloudConfig>>({
+    ...cloudConfigs,
   });
-  const [formErrors, setFormErrors] = useState({
-    configName: false,
-    access_key: false,
-    secret_key: false,
-    region: false,
-  });
-  const [extractedConfig, setExtractedConfig] = useState<null | {
-    resources: number;
-    services: string[];
-  }>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    if (value) {
-      setFormErrors((prev) => ({ ...prev, [name]: false }));
-    }
-  };
+  // Load pending configurations from localStorage
+  useEffect(() => {
+    const storedPendingConfigs = JSON.parse(
+      localStorage.getItem("pendingConfigs") || "[]",
+    );
+    setPendingConfigs(storedPendingConfigs);
 
-  const handleSelectChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const validateForm = () => {
-    const errors = {
-      configName: !formData.configName,
-      access_key: !formData.access_key,
-      secret_key: !formData.secret_key,
-      region: !formData.region,
-    };
-
-    setFormErrors(errors);
-    return !Object.values(errors).some(Boolean);
-  };
-
-  const handleTabChange = (value: string) => {
-    setCurrentTab(value);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
-    console.log(formData);
-
-    setIsLoading(true);
-    setExtractedConfig(null);
-
-    try {
-      const response = await fetch("api/terraloads/getCloudConfig", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addCloudConfig = () => {
-    const newConfig = {
-      id: `${formData.provider}-${Date.now()}`,
-      configName: formData.configName,
-      provider: formData.provider,
-      criticalCount: Math.floor(Math.random() * 3),
-      highCount: Math.floor(Math.random() * 5) + 2,
-      lowCount: Math.floor(Math.random() * 10) + 5,
-    };
-
-    setConfigs([...configs, newConfig]);
-    setIsAddDialogOpen(false);
-    setIsLoading(false);
-    setExtractedConfig(null);
-    setFormData({
-      configName: "",
-      provider: "aws",
-      access_key: "",
-      secret_key: "",
-      region: "",
+    // Add pending configs to allConfigs
+    const newAllConfigs = { ...cloudConfigs };
+    storedPendingConfigs.forEach((config: CloudConfig) => {
+      newAllConfigs[config.id] = config;
     });
-    setCurrentTab("basic");
-  };
+    setAllConfigs(newAllConfigs);
+  }, []);
 
-  const closeDialog = () => {
-    setIsAddDialogOpen(false);
-    setIsLoading(false);
-    setExtractedConfig(null);
-    setFormData({
-      configName: "",
-      provider: "aws",
-      access_key: "",
-      secret_key: "",
-      region: "",
-    });
-    setFormErrors({
-      configName: false,
-      access_key: false,
-      secret_key: false,
-      region: false,
-    });
-    setCurrentTab("basic");
+  const handleConfigClick = (config: CloudConfig) => {
+    // Check if this config is in the pending list
+    const isPending = pendingConfigs.some((c) => c.id === config.id);
+
+    if (isPending) {
+      setSelectedConfig(config);
+      setIsCredentialsDialogOpen(true);
+      return true; // Prevent navigation
+    }
+
+    return false; // Allow navigation
   };
 
   return (
     <>
       <Sidebar>
-        <SidebarHeader className="border-b">
-          <div className="flex items-center gap-2 px-2 py-3">
-            <span className="text-lg font-semibold">TerraGuard</span>
+        <SidebarHeader>
+          <div className="flex items-center px-2 py-2">
+            <span className="text-xl font-bold">TerraGuard</span>
           </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive>
+                <SidebarMenuButton asChild isActive={pathname === "/"}>
                   <Link href="/">
                     <Home />
                     <span>Home</span>
@@ -202,231 +117,87 @@ export function AppSidebar() {
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
+
           <SidebarSeparator />
+
           <SidebarGroup>
             <SidebarGroupLabel>Cloud Configurations</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {configs.map((config) => (
+                {Object.values(allConfigs).map((config) => (
                   <SidebarMenuItem key={config.id}>
-                    <SidebarMenuButton asChild>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === `/cloud/${config.id}`}
+                      onClick={() =>
+                        handleConfigClick(config) ? true : undefined
+                      }
+                    >
                       <Link href={`/cloud/${config.id}`}>
-                        <span>{config.configName}</span>
+                        <span>{config.name}</span>
                       </Link>
                     </SidebarMenuButton>
-                    <SidebarMenuBadge className="bg-destructive text-destructive-foreground">
-                      {config.criticalCount}
-                    </SidebarMenuBadge>
+                    {pendingConfigs.some((c) => c.id === config.id) ? (
+                      <SidebarMenuBadge className="bg-yellow-500 text-white">
+                        Pending
+                      </SidebarMenuBadge>
+                    ) : config.criticalCount && config.criticalCount > 0 ? (
+                      <SidebarMenuBadge className="bg-destructive text-destructive-foreground">
+                        {config.criticalCount}
+                      </SidebarMenuBadge>
+                    ) : config.highCount && config.highCount > 0 ? (
+                      <SidebarMenuBadge className="bg-orange-500 text-white">
+                        {config.highCount}
+                      </SidebarMenuBadge>
+                    ) : null}
                   </SidebarMenuItem>
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t p-4">
+
+        <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={pathname === "/account"}>
+                <Link href="/account">
+                  <User />
+                  <span>Account</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname === "/settings"}>
                 <Link href="/settings">
-                  <Settings className="h-4 w-4" />
+                  <Settings />
                   <span>Settings</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-xs text-muted-foreground">
-              <p>TerraGuard v1.0.0</p>
-            </div>
-          </div>
         </SidebarFooter>
       </Sidebar>
 
-      {/* Floating action button for adding cloud configuration */}
       <Button
-        onClick={() => setIsAddDialogOpen(true)}
-        className="fixed bottom-6 right-6 rounded-full h-12 w-12 shadow-lg"
         size="icon"
+        className="fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg"
+        onClick={() => setIsAddDialogOpen(true)}
       >
         <Plus className="h-6 w-6" />
         <span className="sr-only">Add Cloud Configuration</span>
       </Button>
 
-      <Dialog open={isAddDialogOpen} onOpenChange={closeDialog}>
-        <DialogContent className="sm:max-w-[525px]">
-          <DialogHeader>
-            <DialogTitle>Add Cloud Configuration</DialogTitle>
-            <DialogDescription>
-              Connect to your cloud provider to scan for misconfigurations.
-            </DialogDescription>
-          </DialogHeader>
+      <AddCloudConfigDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+      />
 
-          {!isLoading && !extractedConfig ? (
-            <form onSubmit={handleSubmit}>
-              <Tabs
-                value={currentTab}
-                onValueChange={handleTabChange}
-                className="w-full"
-              >
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="basic">Basic Info</TabsTrigger>
-                  <TabsTrigger value="credentials">Credentials</TabsTrigger>
-                </TabsList>
-                <TabsContent value="basic" className="mt-4">
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="configName">Configuration Name</Label>
-                      <Input
-                        id="configName"
-                        name="configName"
-                        value={formData.configName}
-                        onChange={handleInputChange}
-                        placeholder="Production Environment"
-                        className={
-                          formErrors.configName ? "border-destructive" : ""
-                        }
-                      />
-                      {formErrors.configName && (
-                        <p className="text-sm text-destructive">
-                          Configuration name is required
-                        </p>
-                      )}
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="provider">Cloud Provider</Label>
-                      <Select
-                        value={formData.provider}
-                        onValueChange={(value) =>
-                          handleSelectChange("provider", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select provider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="aws">AWS</SelectItem>
-                          <SelectItem value="azure">Azure</SelectItem>
-                          <SelectItem value="gcp">Google Cloud</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="credentials" className="mt-4">
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="access_key">Access Key / Client ID</Label>
-                      <Input
-                        id="access_key"
-                        name="access_key"
-                        value={formData.access_key}
-                        onChange={handleInputChange}
-                        placeholder="Enter your access key"
-                        className={
-                          formErrors.access_key ? "border-destructive" : ""
-                        }
-                      />
-                      {formErrors.access_key && (
-                        <p className="text-sm text-destructive">
-                          Access key is required
-                        </p>
-                      )}
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="secret_key">
-                        Secret Key / Client Secret
-                      </Label>
-                      <Input
-                        id="secret_key"
-                        name="secret_key"
-                        type="password"
-                        value={formData.secret_key}
-                        onChange={handleInputChange}
-                        placeholder="Enter your secret key"
-                        className={
-                          formErrors.secret_key ? "border-destructive" : ""
-                        }
-                      />
-                      {formErrors.secret_key && (
-                        <p className="text-sm text-destructive">
-                          Secret key is required
-                        </p>
-                      )}
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="region">Region</Label>
-                      <Input
-                        id="region"
-                        name="region"
-                        value={formData.region}
-                        onChange={handleInputChange}
-                        placeholder="us-east-1"
-                        className={
-                          formErrors.region ? "border-destructive" : ""
-                        }
-                      />
-                      {formErrors.region && (
-                        <p className="text-sm text-destructive">
-                          Region is required
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-              <DialogFooter className="mt-6">
-                <Button type="submit">Extract Configuration</Button>
-              </DialogFooter>
-            </form>
-          ) : isLoading ? (
-            <div className="flex flex-col items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-              <p className="text-center font-medium">
-                Extracting the configuration...
-              </p>
-              <p className="text-center text-sm text-muted-foreground mt-2">
-                This may take a few moments while we analyze your cloud
-                resources.
-              </p>
-            </div>
-          ) : extractedConfig ? (
-            <div className="py-4">
-              <Alert className="mb-4 bg-green-50 border-green-200">
-                <AlertDescription className="text-green-800">
-                  Configuration successfully extracted!
-                </AlertDescription>
-              </Alert>
-
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium mb-2">Discovered Resources</h3>
-                  <p className="text-2xl font-bold">
-                    {extractedConfig.resources}
-                  </p>
-                </div>
-
-                <div>
-                  <h3 className="font-medium mb-2">Services Detected</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {extractedConfig.services.map((service, index) => (
-                      <div
-                        key={index}
-                        className="bg-muted px-3 py-1 rounded-full text-sm"
-                      >
-                        {service}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <DialogFooter className="mt-6">
-                <Button onClick={addCloudConfig}>Add Configuration</Button>
-              </DialogFooter>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <AddCredentialsDialog
+        open={isCredentialsDialogOpen}
+        onOpenChange={setIsCredentialsDialogOpen}
+        config={selectedConfig}
+      />
     </>
   );
 }
