@@ -96,36 +96,7 @@ export function AddCredentialsDialog({
 
     setIsLoading(true);
 
-    // Simulate API call and extraction process
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSuccess(true);
-
-      // Remove from pending configs
-      const pendingConfigs = JSON.parse(
-        localStorage.getItem("pendingConfigs") || "[]",
-      );
-      const updatedPendingConfigs = pendingConfigs.filter(
-        (c: CloudConfig) => c.id !== config.id,
-      );
-      localStorage.setItem(
-        "pendingConfigs",
-        JSON.stringify(updatedPendingConfigs),
-      );
-
-      toast({
-        title: "Configuration Complete",
-        description:
-          "Credentials added and configuration extracted successfully.",
-      });
-
-      // Reset and close after a short delay
-      setTimeout(() => {
-        setIsSuccess(false);
-        onOpenChange(false);
-        router.push(`/cloud/${config.id}`);
-      }, 1000);
-    }, 3000); // Longer delay to simulate extraction
+    //sending request to api/terraloads/getCloudConfig
   };
 
   return (

@@ -48,37 +48,46 @@ export function AddCloudConfigDialog({
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSuccess(true);
+    // call to api/database/storeInitialConfig
 
-      // Add to local storage to track configurations without credentials
-      const pendingConfigs = JSON.parse(
-        localStorage.getItem("pendingConfigs") || "[]",
-      );
-      const configId = `${provider}-${Date.now()}`;
-      pendingConfigs.push({
-        id: configId,
-        name: configName,
-        provider,
-      });
-      localStorage.setItem("pendingConfigs", JSON.stringify(pendingConfigs));
-
-      toast({
-        title: "Configuration Added",
-        description:
-          "Basic configuration has been added. Please add credentials next.",
+    try {
+      const response = await fetch("/api/database/storeInitialConfig", {
+        method: "POST",
+        body: JSON.stringify({
+          name: configName,
+          provider: provider,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-      // Reset and close after a short delay
+      if (response.ok) {
+        setIsSuccess(true);
+        setConfigName("");
+        router.refresh();
+        toast({
+          title: "Configuration Added",
+          description:
+            "Basic configuration has been added. Please add credentials next.",
+        });
+      } else {
+        const data = await response.json();
+        toast({
+          title: "Error",
+          description: data.error,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding Configuration: ", error);
+    } finally {
       setTimeout(() => {
         setIsSuccess(false);
-        setConfigName("");
-        onOpenChange(false);
-        router.refresh();
-      }, 1000);
-    }, 1000);
+      }, 500);
+      onOpenChange(false);
+      setIsLoading(false);
+    }
   };
 
   return (

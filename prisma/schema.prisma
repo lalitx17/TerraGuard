@@ -14,7 +14,7 @@ model Configuration {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   issues    Issue[]
-  pending   Boolean
+  isPending Boolean
 }
 
 model Issue {
