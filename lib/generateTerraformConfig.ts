@@ -1,16 +1,22 @@
-export default function generateTerraformConfig(provider: string): string {
+export default function generateTerraformConfig(
+  provider: string,
+  region: string,
+): string {
   // AWS configuration
   if (provider === "aws") {
     return `
-provider "aws" {
-  # Provider-specific configuration
-}
+    terraform {
+      required_providers {
+        aws = {
+          source  = "hashicorp/aws"
+          version = "~> 5.0"
+        }
+      }
+    }
 
-data "aws_caller_identity" "current" {}
-
-output "account_info" {
-  value = data.aws_caller_identity.current
-}
+    provider "aws" {
+      region = "${region}"
+    }
 `;
   }
 

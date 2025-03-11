@@ -3,6 +3,8 @@ import fs from "fs";
 import { promisify } from "util";
 import path from "path";
 import { NextResponse } from "next/server";
+import generateTerraformConfig from "@/lib/generateTerraformConfig";
+import { TerraformFilesFinder } from "@/lib/configExtractor";
 
 const execPromise = promisify(exec);
 
@@ -12,6 +14,9 @@ interface credentialsRequest {
   secret_key: string;
   region: string;
 }
+
+const allRegions =
+  "us-east-1,us-east-2,us-west-1,us-west-2,ap-northeast-1,ap-northeast-2,ap-south-1,ap-southeast-1,ap-southeast-2,ca-central-1,eu-central-1,eu-north-1,eu-west-1,eu-west-2,eu-west-3,sa-east-1";
 
 export async function POST(request: Request) {
   try {
@@ -26,35 +31,11 @@ export async function POST(request: Request) {
     );
     fs.mkdirSync(workingDir, { recursive: true });
 
-    // Create AWS credentials file
-    const awsCredentialsContent = `
-[default]
-aws_access_key_id = ${access_key}
-aws_secret_access_key = ${secret_key}
-region = ${region}
-`;
-
-    const awsConfigPath = path.join(process.cwd(), "tmp", ".aws-config-temp");
-    fs.writeFileSync(awsConfigPath, awsCredentialsContent);
-
-    // Create version.tf file
-    const versionTfContent = `
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = "${region}"
-}
-`;
+    const destinationDir = path.join(process.cwd(), "configs");
+    fs.mkdirSync(destinationDir, { recursive: true });
 
     const versionTfPath = path.join(workingDir, "version.tf");
-    fs.writeFileSync(versionTfPath, versionTfContent);
+    fs.writeFileSync(versionTfPath, generateTerraformConfig("aws", region));
 
     // Set environment variables for AWS credentials
     const env = {
@@ -62,13 +43,7 @@ provider "aws" {
       AWS_ACCESS_KEY_ID: access_key,
       AWS_SECRET_ACCESS_KEY: secret_key,
       AWS_REGION: region,
-      AWS_CONFIG_FILE: awsConfigPath,
-      AWS_SHARED_CREDENTIALS_FILE: awsConfigPath,
     };
-
-    // Create destination directory for configs
-    const destinationDir = path.join(process.cwd(), "configs");
-    fs.mkdirSync(destinationDir, { recursive: true });
 
     // Run terraform init
     console.log("Running terraform init...");
@@ -78,7 +53,8 @@ provider "aws" {
     });
 
     // Run terraformer
-    const terraformerCommand = `terraformer import aws --resources=s3 --regions=${region}`;
+    const terraformerCommand = `terraformer import aws --resources=* --regions=${allRegions} --excludes="identitystore"`;
+
     console.log(`Running command: ${terraformerCommand}`);
 
     const { stdout, stderr } = await execPromise(terraformerCommand, {
@@ -91,21 +67,21 @@ provider "aws" {
       console.warn("Terraformer stderr:", stderr);
     }
 
-    // Copy generated files to destination directory
-    const files = fs.readdirSync(workingDir);
-    const tfFiles = files.filter(
-      (file) => file.endsWith(".tf") || file.endsWith(".json"),
-    );
+    const generatedDir = path.join(workingDir, "generated");
+
+    const tfFiles = TerraformFilesFinder(generatedDir);
 
     for (const file of tfFiles) {
-      const sourcePath = path.join(workingDir, file);
-      const destPath = path.join(destinationDir, file);
-      fs.copyFileSync(sourcePath, destPath);
+      const dirName = path.dirname(file).split(path.sep).pop() as string;
+
+      const destDir = path.join(destinationDir, dirName);
+      fs.mkdirSync(destDir, { recursive: true });
+
+      const destPath = path.join(destDir, path.basename(file));
+      fs.copyFileSync(file, destPath);
     }
 
-    // Clean up temporary files
     // fs.rmSync(workingDir, { recursive: true, force: true });
-    fs.unlinkSync(awsConfigPath);
 
     return NextResponse.json({
       success: true,
