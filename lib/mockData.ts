@@ -8,6 +8,7 @@ export const cloudConfigs = {
     lowCount: 12,
     resources: 124,
     securePercentage: 82,
+    pending: false,
     issues: [
       {
         id: "aws-issue-1",
@@ -16,7 +17,6 @@ export const cloudConfigs = {
           "The S3 bucket 'company-data' is configured with public read access, exposing sensitive data.",
         severity: "critical",
         resource: "s3://company-data",
-        provider: "AWS",
       },
       {
         id: "aws-issue-2",
@@ -25,7 +25,6 @@ export const cloudConfigs = {
           "User 'developer1' has been granted administrator privileges which violates least privilege principle.",
         severity: "critical",
         resource: "iam::user/developer1",
-        provider: "AWS",
       },
       {
         id: "aws-issue-3",
@@ -34,7 +33,6 @@ export const cloudConfigs = {
           "RDS instance 'production-db' is not configured with encryption at rest.",
         severity: "high",
         resource: "rds:production-db",
-        provider: "AWS",
       },
     ],
   },
@@ -47,6 +45,7 @@ export const cloudConfigs = {
     lowCount: 8,
     resources: 78,
     securePercentage: 89,
+    pending: false,
     issues: [
       {
         id: "azure-issue-1",
@@ -55,7 +54,6 @@ export const cloudConfigs = {
           "NSG allows inbound traffic from any IP address on port 22 (SSH).",
         severity: "high",
         resource: "nsg:dev-servers",
-        provider: "Azure",
       },
       {
         id: "azure-issue-2",
@@ -63,7 +61,6 @@ export const cloudConfigs = {
         description: "Storage account 'devfiles' allows public blob access.",
         severity: "critical",
         resource: "storage:devfiles",
-        provider: "Azure",
       },
     ],
   },
@@ -76,6 +73,7 @@ export const cloudConfigs = {
     lowCount: 9,
     resources: 92,
     securePercentage: 85,
+    pending: false,
     issues: [
       {
         id: "gcp-issue-1",
@@ -84,7 +82,6 @@ export const cloudConfigs = {
           "Multiple resources are missing required organization tags for cost allocation.",
         severity: "low",
         resource: "multiple",
-        provider: "GCP",
       },
       {
         id: "gcp-issue-2",
@@ -93,7 +90,6 @@ export const cloudConfigs = {
           "Default service account has project editor role which grants excessive permissions.",
         severity: "critical",
         resource: "iam:default-service-account",
-        provider: "GCP",
       },
     ],
   },
@@ -107,6 +103,7 @@ export const cloudConfigs = {
     lowCount: 7,
     resources: 86,
     securePercentage: 78,
+    pending: false,
     issues: [
       {
         id: "aws-123-issue-1",
@@ -115,7 +112,6 @@ export const cloudConfigs = {
           "The root account has active access keys which is a security risk.",
         severity: "critical",
         resource: "iam::root",
-        provider: "AWS",
       },
       {
         id: "aws-123-issue-2",
@@ -124,7 +120,6 @@ export const cloudConfigs = {
           "Multiple security groups allow all inbound traffic on port 22.",
         severity: "high",
         resource: "sg:multiple",
-        provider: "AWS",
       },
     ],
   },
@@ -137,6 +132,7 @@ export const cloudConfigs = {
     lowCount: 3,
     resources: 42,
     securePercentage: 94,
+    pending: false,
     issues: [
       {
         id: "azure-456-issue-1",
@@ -145,7 +141,6 @@ export const cloudConfigs = {
           "Virtual network peering is not secured with proper gateway transit settings.",
         severity: "high",
         resource: "vnet:dev-network",
-        provider: "Azure",
       },
     ],
   },
