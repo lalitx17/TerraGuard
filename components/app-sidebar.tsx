@@ -31,6 +31,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "aws",
     criticalCount: 3,
     highCount: 7,
+    pending: false,
   },
   "azure-dev": {
     id: "azure-dev",
@@ -38,6 +39,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "azure",
     criticalCount: 1,
     highCount: 4,
+    pending: false,
   },
   "gcp-staging": {
     id: "gcp-staging",
@@ -45,6 +47,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "gcp",
     criticalCount: 2,
     highCount: 5,
+    pending: false,
   },
 };
 
@@ -55,31 +58,26 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
   const [selectedConfig, setSelectedConfig] = useState<CloudConfig | null>(
     null,
   );
-  const [pendingConfigs, setPendingConfigs] = useState<CloudConfig[]>([]);
   const [allConfigs, setAllConfigs] = useState<Record<string, CloudConfig>>({
     ...cloudConfigs,
   });
 
-  // Load pending configurations from localStorage
   useEffect(() => {
-    const storedPendingConfigs = JSON.parse(
-      localStorage.getItem("pendingConfigs") || "[]",
-    );
-    setPendingConfigs(storedPendingConfigs);
-
-    // Add pending configs to allConfigs
-    const newAllConfigs = { ...cloudConfigs };
-    storedPendingConfigs.forEach((config: CloudConfig) => {
-      newAllConfigs[config.id] = config;
-    });
-    setAllConfigs(newAllConfigs);
+    if (initialConfigs && initialConfigs.length > 0) {
+      const newConfigs = { ...allConfigs };
+      initialConfigs.forEach((config) => {
+        newConfigs[config.id] = {
+          ...config,
+          criticalCount: 0,
+          highCount: 0,
+        };
+      });
+      setAllConfigs(newConfigs);
+    }
   }, []);
 
   const handleConfigClick = (config: CloudConfig) => {
-    // Check if this config is in the pending list
-    const isPending = pendingConfigs.some((c) => c.id === config.id);
-
-    if (isPending) {
+    if (config.pending) {
       setSelectedConfig(config);
       setIsCredentialsDialogOpen(true);
       return true; // Prevent navigation
@@ -129,15 +127,15 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
                         <span>{config.name}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {pendingConfigs.some((c) => c.id === config.id) ? (
+                    {config.pending ? (
                       <SidebarMenuBadge className="bg-yellow-500 text-white">
                         Pending
                       </SidebarMenuBadge>
-                    ) : config.criticalCount && config.criticalCount > 0 ? (
+                    ) : (config.criticalCount ?? 0) > 0 ? (
                       <SidebarMenuBadge className="bg-destructive text-destructive-foreground">
                         {config.criticalCount}
                       </SidebarMenuBadge>
-                    ) : config.highCount && config.highCount > 0 ? (
+                    ) : (config.highCount ?? 0) > 0 ? (
                       <SidebarMenuBadge className="bg-orange-500 text-white">
                         {config.highCount}
                       </SidebarMenuBadge>
