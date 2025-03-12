@@ -48,15 +48,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
   },
 };
 
-interface CloudConfig {
-  id: string;
-  name: string;
-  provider: string;
-  criticalCount?: number;
-  highCount?: number;
-}
-
-export function AppSidebar() {
+export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
   const pathname = usePathname();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
