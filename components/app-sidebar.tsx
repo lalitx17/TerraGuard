@@ -74,7 +74,7 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
       });
       setAllConfigs(newConfigs);
     }
-  }, []);
+  }, [initialConfigs]);
 
   const handleConfigClick = (config: CloudConfig) => {
     if (config.pending) {

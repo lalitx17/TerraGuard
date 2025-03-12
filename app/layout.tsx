@@ -24,6 +24,7 @@ export default async function RootLayout({
   try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/database/getAllConfigData`,
+      { cache: "no-store" },
     );
 
     if (!res.ok) {
@@ -32,10 +33,9 @@ export default async function RootLayout({
       );
     }
     configs = await res.json();
-    console.log(configs);
   } catch (error) {
     console.error("Error fetching configurations:", error);
-    configs = []; // Fallback to an empty configuration list
+    configs = [];
   }
 
   return (
