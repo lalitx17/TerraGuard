@@ -7,10 +7,21 @@ interface CloudConfig {
   lowCount?: number;
   resources?: number;
   securePercentage?: number;
-  issues?: any[];
-  pending?: boolean;
+  issues?: Issue[];
+  isPending?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
+interface Issue {
+  id: string;
+  title: string;
+  description: string;
+  severity: string;
+  resource: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
 interface AppSidebarProps {
   initialConfigs: CloudConfig[];
 }

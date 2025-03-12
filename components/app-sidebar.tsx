@@ -31,7 +31,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "aws",
     criticalCount: 3,
     highCount: 7,
-    pending: false,
+    isPending: false,
   },
   "azure-dev": {
     id: "azure-dev",
@@ -39,7 +39,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "azure",
     criticalCount: 1,
     highCount: 4,
-    pending: false,
+    isPending: false,
   },
   "gcp-staging": {
     id: "gcp-staging",
@@ -47,7 +47,7 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "gcp",
     criticalCount: 2,
     highCount: 5,
-    pending: false,
+    isPending: false,
   },
 };
 
@@ -77,12 +77,6 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
   }, [initialConfigs]);
 
   const handleConfigClick = (config: CloudConfig) => {
-    if (config.pending) {
-      setSelectedConfig(config);
-      setIsCredentialsDialogOpen(true);
-      return true; // Prevent navigation
-    }
-
     return false; // Allow navigation
   };
 
@@ -127,7 +121,7 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
                         <span>{config.name}</span>
                       </Link>
                     </SidebarMenuButton>
-                    {config.pending ? (
+                    {config.isPending ? (
                       <SidebarMenuBadge className="bg-yellow-500 text-white">
                         Pending
                       </SidebarMenuBadge>

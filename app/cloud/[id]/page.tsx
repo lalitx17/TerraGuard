@@ -29,48 +29,40 @@ import { cloudConfigs } from "@/lib/mockData";
 export default function CloudConfigPage() {
   const router = useRouter();
   const [config, setConfig] = useState<CloudConfig | null>(null);
-  const [isPending, setIsPending] = useState(false);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const params = useParams();
   const { id } = params as { id: string };
 
   const { data: configuration, isLoading, isError } = useConfigurationById(id);
 
-  console.log(configuration);
-
   useEffect(() => {
-    const configId = params.id;
+    if (configuration && "id" in configuration) {
+      setConfig(configuration);
 
-    // Check if this is a pending config
-    const pendingConfigs = JSON.parse(
-      localStorage.getItem("pendingConfigs") || "[]",
-    );
-    const isPendingConfig = pendingConfigs.some(
-      (c: CloudConfig) => c.id === configId,
-    );
-
-    if (isPendingConfig) {
-      // Get the pending config details
-      const pendingConfig = pendingConfigs.find(
-        (c: CloudConfig) => c.id === configId,
-      );
-      setConfig(pendingConfig);
-      setIsPending(true);
-      setIsCredentialsDialogOpen(true);
+      if (window.updatePageTitle) {
+        window.updatePageTitle(configuration.name);
+      }
     } else {
-      // Get the regular config
-      const currentConfig = cloudConfigs[configId as keyof typeof cloudConfigs];
-
-      if (currentConfig) {
-        setConfig(currentConfig);
-
-        // Update the title using the global method
-        if (window.updatePageTitle) {
-          window.updatePageTitle(currentConfig.name);
-        }
+      // Fallback to mock data with type assertion
+      const mockConfig = cloudConfigs[id as keyof typeof cloudConfigs];
+      if (mockConfig) {
+        setConfig({
+          ...mockConfig,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
       }
     }
-  }, [params.id]);
+  }, [configuration, id]);
+
+  useEffect(() => {
+    if (config) {
+      // Update the title using the global method
+      if (window.updatePageTitle) {
+        window.updatePageTitle(config.name);
+      }
+    }
+  }, [config]);
 
   if (!config) {
     return (
@@ -82,7 +74,7 @@ export default function CloudConfigPage() {
     );
   }
 
-  if (isPending) {
+  if (config.isPending) {
     return (
       <div className="w-full py-6">
         <Container>
@@ -116,7 +108,6 @@ export default function CloudConfigPage() {
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
-
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -175,7 +166,6 @@ export default function CloudConfigPage() {
             </CardContent>
           </Card>
         </div>
-
         <Tabs defaultValue="all" className="mt-6">
           <TabsList>
             <TabsTrigger value="all">All Issues</TabsTrigger>
@@ -194,7 +184,7 @@ export default function CloudConfigPage() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="grid gap-4">
-                    {config.issues?.map((issue: any) => (
+                    {config.issues?.map((issue) => (
                       <div
                         key={issue.id}
                         className="flex items-start gap-4 rounded-lg border p-4"
@@ -229,7 +219,6 @@ export default function CloudConfigPage() {
               </CardContent>
             </Card>
           </TabsContent>
-
           <TabsContent value="critical" className="space-y-4">
             <Card>
               <CardHeader>
@@ -242,8 +231,8 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      ?.filter((issue: any) => issue.severity === "critical")
-                      .map((issue: any) => (
+                      ?.filter((issue) => issue.severity === "critical")
+                      .map((issue) => (
                         <div
                           key={issue.id}
                           className="flex items-start gap-4 rounded-lg border p-4"
@@ -284,8 +273,8 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      ?.filter((issue: any) => issue.severity === "high")
-                      .map((issue: any) => (
+                      ?.filter((issue) => issue.severity === "high")
+                      .map((issue) => (
                         <div
                           key={issue.id}
                           className="flex items-start gap-4 rounded-lg border p-4"
@@ -324,8 +313,8 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      ?.filter((issue: any) => issue.severity === "low")
-                      .map((issue: any) => (
+                      ?.filter((issue) => issue.severity === "low")
+                      .map((issue) => (
                         <div
                           key={issue.id}
                           className="flex items-start gap-4 rounded-lg border p-4"
@@ -356,7 +345,6 @@ export default function CloudConfigPage() {
           </TabsContent>
         </Tabs>
       </Container>
-
       <AddCredentialsDialog
         open={isCredentialsDialogOpen}
         onOpenChange={setIsCredentialsDialogOpen}

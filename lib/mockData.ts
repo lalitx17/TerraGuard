@@ -8,7 +8,7 @@ export const cloudConfigs = {
     lowCount: 12,
     resources: 124,
     securePercentage: 82,
-    pending: false,
+    isPending: false,
     issues: [
       {
         id: "aws-issue-1",
@@ -45,7 +45,7 @@ export const cloudConfigs = {
     lowCount: 8,
     resources: 78,
     securePercentage: 89,
-    pending: false,
+    isPending: false,
     issues: [
       {
         id: "azure-issue-1",
@@ -73,7 +73,7 @@ export const cloudConfigs = {
     lowCount: 9,
     resources: 92,
     securePercentage: 85,
-    pending: false,
+    isPending: false,
     issues: [
       {
         id: "gcp-issue-1",
@@ -103,7 +103,7 @@ export const cloudConfigs = {
     lowCount: 7,
     resources: 86,
     securePercentage: 78,
-    pending: false,
+    isPending: false,
     issues: [
       {
         id: "aws-123-issue-1",
@@ -132,7 +132,7 @@ export const cloudConfigs = {
     lowCount: 3,
     resources: 42,
     securePercentage: 94,
-    pending: false,
+    isPending: false,
     issues: [
       {
         id: "azure-456-issue-1",
