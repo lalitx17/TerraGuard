@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     });
 
     // Run terraformer
-    const terraformerCommand = `terraformer import aws --resources=* --regions=${allRegions} --excludes="identitystore"`;
+    const terraformerCommand = `terraformer import aws --resources=* --regions=${region} --excludes="identitystore"`;
 
     console.log(`Running command: ${terraformerCommand}`);
 

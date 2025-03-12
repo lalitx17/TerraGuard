@@ -16,7 +16,7 @@ export async function POST(req: Request) {
       data: {
         name: name,
         provider: provider,
-        pending: true,
+        isPending: true,
       },
     });
     return NextResponse.json(newConfig, { status: 201 });
