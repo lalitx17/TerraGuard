@@ -6,6 +6,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { ToastProvider } from "@/components/ui/toast";
 import { PageHeader } from "@/components/page-header";
 import AppSidebar from "@/components/app-sidebar";
+import { QueryProvider } from "@/components/providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -41,19 +42,23 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ToastProvider>
-          <SidebarProvider>
-            <div className="flex min-h-screen w-full">
-              <Suspense fallback={<div>Loading...</div>}>
-                <AppSidebar initialConfigs={configs} />
-              </Suspense>
-              <div className="flex-1 flex flex-col w-full">
-                <PageHeader />
-                <main className="flex-1 w-full overflow-auto">{children}</main>
+        <QueryProvider>
+          <ToastProvider>
+            <SidebarProvider>
+              <div className="flex min-h-screen w-full">
+                <Suspense fallback={<div>Loading...</div>}>
+                  <AppSidebar initialConfigs={configs} />
+                </Suspense>
+                <div className="flex-1 flex flex-col w-full">
+                  <PageHeader />
+                  <main className="flex-1 w-full overflow-auto">
+                    {children}
+                  </main>
+                </div>
               </div>
-            </div>
-          </SidebarProvider>
-        </ToastProvider>
+            </SidebarProvider>
+          </ToastProvider>
+        </QueryProvider>
       </body>
     </html>
   );

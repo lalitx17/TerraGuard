@@ -2,9 +2,13 @@ interface CloudConfig {
   id: string;
   name: string;
   provider: string;
-  pending: boolean;
   criticalCount?: number;
   highCount?: number;
+  lowCount?: number;
+  resources?: number;
+  securePercentage?: number;
+  issues?: any[];
+  pending?: boolean;
 }
 
 interface AppSidebarProps {
