@@ -9,6 +9,7 @@ import { TerraformFilesFinder } from "@/lib/configExtractor";
 const execPromise = promisify(exec);
 
 interface credentialsRequest {
+  cloudId: string;
   provider: string;
   access_key: string;
   secret_key: string;
@@ -20,14 +21,14 @@ const allRegions =
 
 export async function POST(request: Request) {
   try {
-    const { provider, access_key, secret_key, region } =
+    const { cloudId, provider, access_key, secret_key, region } =
       (await request.json()) as credentialsRequest;
 
     // Create a working directory
     const workingDir = path.join(
       process.cwd(),
       "tmp",
-      `terraformer-${Date.now()}`,
+      `terraformer-${cloudId}`,
     );
     fs.mkdirSync(workingDir, { recursive: true });
 

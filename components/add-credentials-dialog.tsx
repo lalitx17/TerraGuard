@@ -4,6 +4,7 @@ import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
+import { useParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useGenerateTerraformConfig } from "@/hooks/use-terraformer";
 
 // AWS Credentials State
 interface AWSState {
@@ -253,31 +255,31 @@ const validateGCP = (
   return true;
 };
 
-// Provider specific submit handlers
 const submitAWS = async (
   access_key: string,
   secret_key: string,
   region: string,
+  cloudId: string,
+  mutateAsync: any,
   toast: any,
   provider: string = "aws",
 ) => {
   try {
-    const response = await fetch("/api/terraloads/getCloudConfig", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ provider, access_key, secret_key, region }),
+    const result = await mutateAsync({
+      cloudId,
+      provider,
+      access_key,
+      secret_key,
+      region,
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log(data);
+    if (result.success) {
+      console.log(result.files);
       return true;
     } else {
       toast({
         title: "Error",
-        description: "Failed to extract configuration",
+        description: result.message || "Failed to extract configuration",
         variant: "destructive",
       });
       return false;
@@ -297,30 +299,27 @@ const submitAzure = async (
   azureClientSecret: string,
   azureTenantId: string,
   azureSubscriptionId: string,
+  cloudId: string,
+  mutateAsync: any,
   toast: any,
 ) => {
   try {
-    const response = await fetch("/api/terraloads/getCloudConfig", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        azureClientId,
-        azureClientSecret,
-        azureTenantId,
-        azureSubscriptionId,
-      }),
+    const result = await mutateAsync({
+      cloudId,
+      provider: "azure",
+      azureClientId,
+      azureClientSecret,
+      azureTenantId,
+      azureSubscriptionId,
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log(data);
+    if (result.success) {
+      console.log(result.files);
       return true;
     } else {
       toast({
         title: "Error",
-        description: "Failed to extract configuration",
+        description: result.message || "Failed to extract configuration",
         variant: "destructive",
       });
       return false;
@@ -338,25 +337,25 @@ const submitAzure = async (
 const submitGCP = async (
   gcpProjectId: string,
   gcpServiceAccountKey: string,
+  cloudId: string,
+  mutateAsync: any,
   toast: any,
 ) => {
   try {
-    const response = await fetch("/api/terraloads/getCloudConfig", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ gcpProjectId, gcpServiceAccountKey }),
+    const result = await mutateAsync({
+      cloudId,
+      provider: "gcp",
+      gcpProjectId,
+      gcpServiceAccountKey,
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log(data);
+    if (result.success) {
+      console.log(result.files);
       return true;
     } else {
       toast({
         title: "Error",
-        description: "Failed to extract configuration",
+        description: result.message || "Failed to extract configuration",
         variant: "destructive",
       });
       return false;
@@ -400,6 +399,10 @@ export function AddCredentialsDialog({
   const [gcpProjectId, setGcpProjectId] = useState("");
   const [gcpServiceAccountKey, setGcpServiceAccountKey] = useState("");
 
+  const { mutateAsync } = useGenerateTerraformConfig();
+
+  const { id } = useParams() as { id: string };
+
   if (!config) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -412,7 +415,14 @@ export function AddCredentialsDialog({
     if (config.provider === "aws") {
       isValid = validateAWS(awsAccessKey, awsSecretKey, awsRegion, toast);
       if (isValid) {
-        isValid = await submitAWS(awsAccessKey, awsSecretKey, awsRegion, toast);
+        isValid = await submitAWS(
+          awsAccessKey,
+          awsSecretKey,
+          awsRegion,
+          id,
+          mutateAsync,
+          toast,
+        );
       }
     } else if (config.provider === "azure") {
       isValid = validateAzure(
@@ -428,13 +438,21 @@ export function AddCredentialsDialog({
           azureClientSecret,
           azureTenantId,
           azureSubscriptionId,
+          id,
+          mutateAsync,
           toast,
         );
       }
     } else if (config.provider === "gcp") {
       isValid = validateGCP(gcpProjectId, gcpServiceAccountKey, toast);
       if (isValid) {
-        isValid = await submitGCP(gcpProjectId, gcpServiceAccountKey, toast);
+        isValid = await submitGCP(
+          gcpProjectId,
+          gcpServiceAccountKey,
+          id,
+          mutateAsync,
+          toast,
+        );
       }
     }
 
