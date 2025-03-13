@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   ArrowRight,
   CheckCircle,
+  Code,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
@@ -103,10 +104,16 @@ export default function CloudConfigPage() {
       <Container>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-3xl font-bold tracking-tight">{config.name}</h2>
-          <Button variant="outline">
-            Rescan Configuration
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => router.push(`/cloud/${params.id}/editor`)}>
+              <Code className="mr-2 h-4 w-4" />
+              Edit Configuration
+            </Button>
+            <Button variant="outline">
+              Rescan Configuration
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>

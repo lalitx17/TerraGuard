@@ -62,6 +62,8 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
     ...cloudConfigs,
   });
 
+  const isEditorPage = pathname?.includes("/editor");
+
   useEffect(() => {
     if (initialConfigs && initialConfigs.length > 0) {
       const newConfigs = { ...allConfigs };
@@ -112,7 +114,10 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
                   <SidebarMenuItem key={config.id}>
                     <SidebarMenuButton
                       asChild
-                      isActive={pathname === `/cloud/${config.id}`}
+                      isActive={
+                        pathname === `/cloud/${config.id}` ||
+                        pathname === `/cloud/${config.id}/editor`
+                      }
                       onClick={() =>
                         handleConfigClick(config) ? true : undefined
                       }
@@ -163,14 +168,16 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
         </SidebarFooter>
       </Sidebar>
 
-      <Button
-        size="icon"
-        className="fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg"
-        onClick={() => setIsAddDialogOpen(true)}
-      >
-        <Plus className="h-6 w-6" />
-        <span className="sr-only">Add Cloud Configuration</span>
-      </Button>
+      {!isEditorPage && (
+        <Button
+          size="icon"
+          className="fixed bottom-4 right-4 h-12 w-12 rounded-full shadow-lg"
+          onClick={() => setIsAddDialogOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+          <span className="sr-only">Add Cloud Configuration</span>
+        </Button>
+      )}
 
       <AddCloudConfigDialog
         open={isAddDialogOpen}

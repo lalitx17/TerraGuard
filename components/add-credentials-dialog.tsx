@@ -378,7 +378,7 @@ export function AddCredentialsDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  config: CloudConfig;
+  config: CloudConfig | null;
 }) {
   const router = useRouter();
   const { toast } = useToast();
