@@ -26,12 +26,10 @@ export const cloudConfigs = {
           "https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucket-encryption.html",
           "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket#server_side_encryption_configuration",
         ],
-        title: "S3 Bucket Publicly Accessible",
         description:
           "The S3 bucket 'company-data' is configured with public read access, exposing sensitive data.",
         severity: "critical",
         resource: "s3://company-data",
-        provider: "AWS",
         createdAt: "2023-10-01T12:00:00Z",
         updatedAt: "2023-10-02T12:00:00Z",
         location: {
@@ -55,12 +53,10 @@ export const cloudConfigs = {
           "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#use-groups-for-permissions",
           "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_user",
         ],
-        title: "IAM User with Admin Privileges",
         description:
           "User 'developer1' has been granted administrator privileges which violates least privilege principle.",
         severity: "critical",
         resource: "iam::user/developer1",
-        provider: "AWS",
         createdAt: "2023-10-03T12:00:00Z",
         updatedAt: "2023-10-04T12:00:00Z",
         location: {
@@ -83,12 +79,10 @@ export const cloudConfigs = {
           "https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Overview.Encryption.html",
           "https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/db_instance#storage_encrypted",
         ],
-        title: "Unencrypted Database",
         description:
           "RDS instance 'production-db' is not configured with encryption at rest.",
         severity: "high",
         resource: "rds:production-db",
-        provider: "AWS",
         createdAt: "2023-10-05T12:00:00Z",
         updatedAt: "2023-10-06T12:00:00Z",
         location: {
@@ -118,8 +112,6 @@ export const cloudConfigs = {
         warning: false,
         status: 0,
         resource: "aws_sqs_queue.tfer--noter",
-        provider: "AWS",
-        title: "SQS Queue with Wildcard Policy",
         createdAt: "2023-10-07T12:00:00Z",
         updatedAt: "2023-10-08T12:00:00Z",
         location: {
@@ -159,12 +151,10 @@ export const cloudConfigs = {
           "https://docs.microsoft.com/en-us/azure/security/fundamentals/network-best-practices",
           "https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/network_security_rule",
         ],
-        title: "Network Security Group Too Permissive",
         description:
           "NSG allows inbound traffic from any IP address on port 22 (SSH).",
         severity: "high",
         resource: "nsg:dev-servers",
-        provider: "Azure",
         createdAt: "2023-10-07T12:00:00Z",
         updatedAt: "2023-10-08T12:00:00Z",
         location: {
@@ -188,11 +178,9 @@ export const cloudConfigs = {
           "https://docs.microsoft.com/en-us/azure/storage/common/storage-network-security",
           "https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/storage_account_network_rules",
         ],
-        title: "Storage Account with Public Access",
         description: "Storage account 'devfiles' allows public blob access.",
         severity: "critical",
         resource: "storage:devfiles",
-        provider: "Azure",
         createdAt: "2023-10-07T12:00:00Z",
         updatedAt: "2023-10-08T12:00:00Z",
         location: {

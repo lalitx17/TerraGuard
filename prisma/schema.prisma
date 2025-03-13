@@ -38,8 +38,6 @@ model SecurityIssue {
   warning          Boolean?
   status           Int?
   resource         String
-  provider         String?
-  title            String?
   location         Json?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt

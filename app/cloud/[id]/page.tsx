@@ -224,7 +224,7 @@ export default function CloudConfigPage() {
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <p className="font-medium leading-none">
-                              {issue.title || issue.rule_description}
+                              {issue.rule_description}
                             </p>
                             <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                               {issue.rule_id ||
@@ -282,7 +282,7 @@ export default function CloudConfigPage() {
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <p className="font-medium leading-none">
-                                {issue.title || issue.rule_description}
+                                {issue.rule_description}
                               </p>
                               <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                                 {issue.rule_id ||
@@ -339,7 +339,7 @@ export default function CloudConfigPage() {
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <p className="font-medium leading-none">
-                                {issue.title || issue.rule_description}
+                                {issue.rule_description}
                               </p>
                               <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                                 {issue.rule_id ||
@@ -394,7 +394,7 @@ export default function CloudConfigPage() {
                           <div className="flex-1 space-y-1">
                             <div className="flex items-center gap-2">
                               <p className="font-medium leading-none">
-                                {issue.title || issue.rule_description}
+                                {issue.rule_description}
                               </p>
                               <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
                                 {issue.rule_id ||

@@ -6,6 +6,7 @@ import { promisify } from "util";
 import path from "path";
 import generateTerraformConfig from "@/lib/generateTerraformConfig";
 import { TerraformFilesFinder } from "@/lib/configExtractor";
+import { runTfsecScanAction } from "../tfsec/tfsecTest";
 
 const execPromise = promisify(exec);
 
@@ -78,10 +79,16 @@ export async function generateTerraformConfigAction({
     // Cleanup (uncomment when ready)
     // fs.rmSync(workingDir, { recursive: true, force: true });
 
+    // Run TFSec scan
+    console.log("Running TFSec scan...");
+    const scanResults = await runTfsecScanAction(cloudId);
+
     return {
       success: true,
       message: "Configuration generated successfully",
       files: tfFiles.map((f) => path.relative(destinationDir, f)),
+      scanResults: scanResults.results,
+      scanReportPath: scanResults.outputPath,
     };
   } catch (error) {
     const errorMessage =
