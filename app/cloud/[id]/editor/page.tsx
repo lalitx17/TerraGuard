@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
+  Check,
   Code,
   GitBranchPlus,
   GitCommit,
@@ -27,122 +28,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useParams } from "next/navigation";
-
-// Sample configuration files for different providers
-const sampleConfigs = {
-  aws: {
-    "main.tf": `provider "aws" {
-  region = "us-west-2"
-}
-
-resource "aws_s3_bucket" "example" {
-  bucket = "my-terraform-bucket"
-
-  tags = {
-    Name        = "My bucket"
-    Environment = "Dev"
-  }
-}
-
-resource "aws_instance" "web" {
-  ami           = "ami-0c55b159cbfafe1f0"
-  instance_type = "t2.micro"
-
-  tags = {
-    Name = "WebServer"
-  }
-}`,
-    "variables.tf": `variable "region" {
-  description = "AWS region"
-  type        = string
-  default     = "us-west-2"
-}
-
-variable "instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t2.micro"
-}`,
-    "outputs.tf": `output "instance_id" {
-  description = "ID of the EC2 instance"
-  value       = aws_instance.web.id
-}
-
-output "instance_public_ip" {
-  description = "Public IP address of the EC2 instance"
-  value       = aws_instance.web.public_ip
-}`,
-  },
-  azure: {
-    "main.tf": `provider "azurerm" {
-  features {}
-}
-
-resource "azurerm_resource_group" "example" {
-  name     = "example-resources"
-  location = "West Europe"
-}
-
-resource "azurerm_virtual_network" "example" {
-  name                = "example-network"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.example.location
-  resource_group_name = azurerm_resource_group.example.name
-}`,
-    "variables.tf": `variable "location" {
-  description = "Azure region"
-  type        = string
-  default     = "West Europe"
-}
-
-variable "resource_group_name" {
-  description = "Resource group name"
-  type        = string
-  default     = "example-resources"
-}`,
-  },
-  gcp: {
-    "main.tf": `provider "google" {
-  project = "my-project-id"
-  region  = "us-central1"
-}
-
-resource "google_compute_network" "vpc_network" {
-  name = "terraform-network"
-}
-
-resource "google_compute_instance" "vm_instance" {
-  name         = "terraform-instance"
-  machine_type = "f1-micro"
-  zone         = "us-central1-c"
-
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-9"
-    }
-  }
-
-  network_interface {
-    network = google_compute_network.vpc_network.name
-    access_config {
-    }
-  }
-}`,
-    "variables.tf": `variable "project" {
-  description = "GCP project ID"
-  type        = string
-}
-
-variable "region" {
-  description = "GCP region"
-  type        = string
-  default     = "us-central1"
-}`,
-  },
-};
+import { sampleConfigs } from "@/lib/sampleConfigs";
 
 export default function EditorPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [configFiles, setConfigFiles] = useState<Record<string, string>>({});
   const [activeFile, setActiveFile] = useState<string>("");
@@ -154,12 +44,15 @@ export default function EditorPage() {
   const [isPushing, setIsPushing] = useState(false);
   const params = useParams();
 
-  useEffect(() => {
-    // In a real app, you would fetch the actual configuration files from an API
-    // For now, we'll use sample configurations based on the provider
-    const configId = params.id;
+  const { id } = params as { id: string };
 
-    // Extract provider from ID (e.g., "aws-123" -> "aws")
+  // Get issue information from URL if coming from fix dialog
+  const issueResource = searchParams.get("resource");
+  const issueRuleId = searchParams.get("ruleId");
+
+  useEffect(() => {
+    const configId = id as string;
+
     const providerFromId = configId.split("-")[0];
 
     if (
@@ -170,11 +63,47 @@ export default function EditorPage() {
       setConfigFiles(
         sampleConfigs[providerFromId as keyof typeof sampleConfigs],
       );
-      setActiveFile(
-        Object.keys(
+
+      // If we have an issue resource, find the file that contains it
+      if (issueResource) {
+        // Find the file that contains the resource
+        const resourceName = issueResource.split(".").pop() || "";
+        let fileWithResource = "";
+
+        // For SQS issues, open the sqs.tf file
+
+        Object.entries(
           sampleConfigs[providerFromId as keyof typeof sampleConfigs],
-        )[0],
-      );
+        ).forEach(([filename, content]) => {
+          if (content.includes(resourceName)) {
+            fileWithResource = filename;
+          }
+        });
+
+        // Set the active file to the one containing the resource
+        if (fileWithResource) {
+          setActiveFile(fileWithResource);
+        } else {
+          setActiveFile(
+            Object.keys(
+              sampleConfigs[providerFromId as keyof typeof sampleConfigs],
+            )[0],
+          );
+        }
+
+        // Show a toast with the issue information
+        toast({
+          title: `Issue ${issueRuleId}`,
+          description: "Navigate to the highlighted resource to fix the issue.",
+        });
+      } else {
+        // Default to the first file
+        setActiveFile(
+          Object.keys(
+            sampleConfigs[providerFromId as keyof typeof sampleConfigs],
+          )[0],
+        );
+      }
 
       // Set config name for the header
       const configNames: Record<string, string> = {
@@ -197,7 +126,7 @@ export default function EditorPage() {
         );
       }
     }
-  }, [params.id]);
+  }, [params.id, issueResource, issueRuleId, searchParams, toast]);
 
   const handleSaveFile = (content: string) => {
     if (activeFile) {
@@ -333,6 +262,7 @@ export default function EditorPage() {
                       }
                       onSave={handleSaveFile}
                       height="100%"
+                      highlightResource={issueResource}
                     />
                   </TabsContent>
                 ))}

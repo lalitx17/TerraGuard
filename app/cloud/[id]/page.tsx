@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CheckCircle,
   Code,
+  ExternalLink,
   ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
@@ -27,11 +28,25 @@ import { AddCredentialsDialog } from "@/components/add-credentials-dialog";
 import { useConfigurationById } from "@/hooks/use-config-by-id";
 import { cloudConfigs } from "@/lib/mockData";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+
 export default function CloudConfigPage() {
   const router = useRouter();
   const [config, setConfig] = useState<CloudConfig | null>(null);
   const [isCredentialsDialogOpen, setIsCredentialsDialogOpen] = useState(false);
   const params = useParams();
+  const [selectedIssue, setSelectedIssue] = useState<SecurityIssue | null>(
+    null,
+  );
+  const [isFixDialogOpen, setIsFixDialogOpen] = useState(false);
   const { id } = params as { id: string };
 
   const { data: configuration, isLoading, isError } = useConfigurationById(id);
@@ -47,11 +62,7 @@ export default function CloudConfigPage() {
       // Fallback to mock data with type assertion
       const mockConfig = cloudConfigs[id as keyof typeof cloudConfigs];
       if (mockConfig) {
-        setConfig({
-          ...mockConfig,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        setConfig(mockConfig);
       }
     }
   }, [configuration, id]);
@@ -74,6 +85,11 @@ export default function CloudConfigPage() {
       </div>
     );
   }
+
+  const handleFixIssue = (issue: SecurityIssue) => {
+    setSelectedIssue(issue);
+    setIsFixDialogOpen(true);
+  };
 
   if (config.isPending) {
     return (
@@ -115,6 +131,7 @@ export default function CloudConfigPage() {
             </Button>
           </div>
         </div>
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -173,6 +190,7 @@ export default function CloudConfigPage() {
             </CardContent>
           </Card>
         </div>
+
         <Tabs defaultValue="all" className="mt-6">
           <TabsList>
             <TabsTrigger value="all">All Issues</TabsTrigger>
@@ -204,19 +222,34 @@ export default function CloudConfigPage() {
                           <ShieldCheck className="mt-0.5 h-5 w-5 text-yellow-500" />
                         )}
                         <div className="flex-1 space-y-1">
-                          <p className="font-medium leading-none">
-                            {issue.title}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium leading-none">
+                              {issue.title || issue.rule_description}
+                            </p>
+                            <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                              {issue.rule_id ||
+                                `${issue.rule_provider?.toUpperCase()}-${issue.id}`}
+                            </span>
+                          </div>
                           <p className="text-sm text-muted-foreground">
                             {issue.description}
                           </p>
-                          <div className="flex items-center pt-2">
-                            <span className="text-xs text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                               {issue.resource}
                             </span>
+                            {issue.rule_service && (
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                Service: {issue.rule_service}
+                              </span>
+                            )}
                           </div>
                         </div>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleFixIssue(issue)}
+                        >
                           Fix
                         </Button>
                       </div>
@@ -226,6 +259,7 @@ export default function CloudConfigPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
           <TabsContent value="critical" className="space-y-4">
             <Card>
               <CardHeader>
@@ -246,19 +280,34 @@ export default function CloudConfigPage() {
                         >
                           <ShieldAlert className="mt-0.5 h-5 w-5 text-destructive" />
                           <div className="flex-1 space-y-1">
-                            <p className="font-medium leading-none">
-                              {issue.title}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium leading-none">
+                                {issue.title || issue.rule_description}
+                              </p>
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                {issue.rule_id ||
+                                  `${issue.rule_provider?.toUpperCase()}-${issue.id}`}
+                              </span>
+                            </div>
                             <p className="text-sm text-muted-foreground">
                               {issue.description}
                             </p>
-                            <div className="flex items-center pt-2">
-                              <span className="text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 pt-2">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                 {issue.resource}
                               </span>
+                              {issue.rule_service && (
+                                <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                  Service: {issue.rule_service}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleFixIssue(issue)}
+                          >
                             Fix
                           </Button>
                         </div>
@@ -288,19 +337,34 @@ export default function CloudConfigPage() {
                         >
                           <AlertTriangle className="mt-0.5 h-5 w-5 text-orange-500" />
                           <div className="flex-1 space-y-1">
-                            <p className="font-medium leading-none">
-                              {issue.title}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium leading-none">
+                                {issue.title || issue.rule_description}
+                              </p>
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                {issue.rule_id ||
+                                  `${issue.rule_provider?.toUpperCase()}-${issue.id}`}
+                              </span>
+                            </div>
                             <p className="text-sm text-muted-foreground">
                               {issue.description}
                             </p>
-                            <div className="flex items-center pt-2">
-                              <span className="text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 pt-2">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                 {issue.resource}
                               </span>
+                              {issue.rule_service && (
+                                <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                  Service: {issue.rule_service}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleFixIssue(issue)}
+                          >
                             Fix
                           </Button>
                         </div>
@@ -328,19 +392,34 @@ export default function CloudConfigPage() {
                         >
                           <ShieldCheck className="mt-0.5 h-5 w-5 text-yellow-500" />
                           <div className="flex-1 space-y-1">
-                            <p className="font-medium leading-none">
-                              {issue.title}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium leading-none">
+                                {issue.title || issue.rule_description}
+                              </p>
+                              <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                {issue.rule_id ||
+                                  `${issue.rule_provider?.toUpperCase()}-${issue.id}`}
+                              </span>
+                            </div>
                             <p className="text-sm text-muted-foreground">
                               {issue.description}
                             </p>
-                            <div className="flex items-center pt-2">
-                              <span className="text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 pt-2">
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                                 {issue.resource}
                               </span>
+                              {issue.rule_service && (
+                                <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                                  Service: {issue.rule_service}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleFixIssue(issue)}
+                          >
                             Fix
                           </Button>
                         </div>
@@ -352,11 +431,87 @@ export default function CloudConfigPage() {
           </TabsContent>
         </Tabs>
       </Container>
+
       <AddCredentialsDialog
         open={isCredentialsDialogOpen}
         onOpenChange={setIsCredentialsDialogOpen}
         config={config}
       />
+
+      {/* Fix Issue Dialog */}
+      <Dialog open={isFixDialogOpen} onOpenChange={setIsFixDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Fix Security Issue</DialogTitle>
+            <DialogDescription>
+              {selectedIssue?.rule_id} - {selectedIssue?.rule_description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <h3 className="text-sm font-medium">Resource</h3>
+              <p className="text-sm">{selectedIssue?.resource}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium">Impact</h3>
+              <p className="text-sm">{selectedIssue?.impact}</p>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-medium">Resolution</h3>
+              <p className="text-sm">{selectedIssue?.resolution}</p>
+            </div>
+
+            {selectedIssue?.links && selectedIssue.links.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium">Documentation</h3>
+                <div className="space-y-2 mt-2">
+                  {selectedIssue.links.map((link, index) => (
+                    <a
+                      key={index}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center text-sm text-primary hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3 mr-1" />
+                      {link.length > 60 ? `${link.substring(0, 60)}...` : link}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            <div>
+              <h3 className="text-sm font-medium mb-2">Fix Options</h3>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => router.push(`/cloud/${params.id}/editor`)}
+                >
+                  <Code className="mr-2 h-4 w-4" />
+                  Edit Configuration Manually
+                </Button>
+                <Button className="w-full justify-start">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Apply Automatic Fix
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFixDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Editor, { type Monaco } from "@monaco-editor/react";
+import Editor, { Monaco } from "@monaco-editor/react";
 import { Loader2 } from "lucide-react";
-import type { editor } from "monaco-editor";
+import { editor } from "monaco-editor";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ interface CodeEditorProps {
   height?: string;
   onSave?: (value: string) => void;
   readOnly?: boolean;
+  highlightResource?: string | null;
 }
 
 export function CodeEditor({
@@ -29,6 +30,7 @@ export function CodeEditor({
   height = "70vh",
   onSave,
   readOnly = false,
+  highlightResource = null,
 }: CodeEditorProps) {
   const { toast } = useToast();
   const [value, setValue] = useState(initialValue);
@@ -91,6 +93,46 @@ export function CodeEditor({
         onSave(editor.getValue());
       }
     });
+
+    // If we have a resource to highlight, find and highlight it
+    if (highlightResource) {
+      const resourceName = highlightResource.split(".").pop() || "";
+      const text = editor.getValue();
+      const lines = text.split("\n");
+
+      // Find the line that contains the resource
+      let lineNumber = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes(resourceName) && lines[i].includes("resource")) {
+          lineNumber = i + 1; // Monaco editor lines are 1-based
+          break;
+        }
+      }
+
+      // If we found the line, highlight it
+      if (lineNumber > 0) {
+        // Add a decoration to highlight the line
+        const decorations = editor.deltaDecorations(
+          [],
+          [
+            {
+              range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+              options: {
+                isWholeLine: true,
+                className: "bg-yellow-100 dark:bg-yellow-900/30",
+                glyphMarginClassName: "bg-yellow-500",
+                glyphMarginHoverMessage: {
+                  value: "This resource needs to be fixed",
+                },
+              },
+            },
+          ],
+        );
+
+        // Scroll to the line
+        editor.revealLineInCenter(lineNumber);
+      }
+    }
   };
 
   const handleSave = () => {
