@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getConfigurationById } from "@/actions/getConfigById";
+import { getConfigurationById } from "@/actions/database/getConfigById";
 import type { Configuration } from "@prisma/client";
 
 export const useConfigurationById = (id: string) => {

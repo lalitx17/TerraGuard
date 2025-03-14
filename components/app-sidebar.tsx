@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { AddCloudConfigDialog } from "./add-cloud-config-dialog";
 import { AddCredentialsDialog } from "./add-credentials-dialog";
+import { CloudConfig, SecurityIssue, AppSidebarProps } from "@/types/config";
 
 // Mock data for cloud configurations
 const cloudConfigs: Record<string, CloudConfig> = {
@@ -31,6 +32,12 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "aws",
     criticalCount: 3,
     highCount: 7,
+    lowCount: 12,
+    resources: 124,
+    SecurePercentage: 82,
+    createdAt: new Date("2025-03-13T18:51:00Z"),
+    updatedAt: new Date("2025-03-13T18:51:00Z"),
+    issues: [],
     isPending: false,
   },
   "azure-dev": {
@@ -39,6 +46,12 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "azure",
     criticalCount: 1,
     highCount: 4,
+    lowCount: 8,
+    resources: 78,
+    SecurePercentage: 89,
+    createdAt: new Date("2025-03-13T18:51:00Z"),
+    updatedAt: new Date("2025-03-13T18:51:00Z"),
+    issues: [],
     isPending: false,
   },
   "gcp-staging": {
@@ -47,6 +60,12 @@ const cloudConfigs: Record<string, CloudConfig> = {
     provider: "gcp",
     criticalCount: 2,
     highCount: 5,
+    lowCount: 9,
+    resources: 98,
+    SecurePercentage: 85,
+    createdAt: new Date("2025-03-13T18:51:00Z"),
+    updatedAt: new Date("2025-03-13T18:51:00Z"),
+    issues: [],
     isPending: false,
   },
 };
@@ -70,8 +89,6 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
       initialConfigs.forEach((config) => {
         newConfigs[config.id] = {
           ...config,
-          criticalCount: 0,
-          highCount: 0,
         };
       });
       setAllConfigs(newConfigs);

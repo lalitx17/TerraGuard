@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { CloudConfig, SecurityIssue } from "@/types/config";
 
 export default function CloudConfigPage() {
   const router = useRouter();
@@ -184,9 +185,9 @@ export default function CloudConfigPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {config.securePercentage}%
+                {config.SecurePercentage}%
               </div>
-              <Progress value={config.securePercentage} className="mt-2" />
+              <Progress value={config.SecurePercentage} className="mt-2" />
             </CardContent>
           </Card>
         </div>
@@ -272,7 +273,11 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      ?.filter((issue) => issue.severity === "critical")
+                      ?.filter(
+                        (issue) =>
+                          issue.severity === "critical" ||
+                          issue.severity === "CRITICAL",
+                      )
                       .map((issue) => (
                         <div
                           key={issue.id}
@@ -329,7 +334,12 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      ?.filter((issue) => issue.severity === "high")
+                      ?.filter(
+                        (issue) =>
+                          issue.severity === "high" ||
+                          issue.severity === "HIGH" ||
+                          issue.severity === "MEDIUM",
+                      )
                       .map((issue) => (
                         <div
                           key={issue.id}
@@ -384,7 +394,10 @@ export default function CloudConfigPage() {
                 <div className="space-y-4">
                   <div className="grid gap-4">
                     {config.issues
-                      ?.filter((issue) => issue.severity === "low")
+                      ?.filter(
+                        (issue) =>
+                          issue.severity === "low" || issue.severity === "LOW",
+                      )
                       .map((issue) => (
                         <div
                           key={issue.id}

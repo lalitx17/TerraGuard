@@ -1,41 +1,16 @@
-interface CloudConfig {
-  id: string;
-  name: string;
-  provider: string;
-  criticalCount?: number;
-  highCount?: number;
-  lowCount?: number;
-  resources?: number;
-  securePercentage?: number;
-  issues?: SecurityIssue[];
-  isPending?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-}
+import { Prisma } from "@prisma/client";
 
-interface SecurityIssue {
-  id: string;
-  rule_id?: string;
-  long_id?: string;
-  rule_description?: string;
-  rule_provider?: string;
-  rule_service?: string;
-  impact?: string;
-  resolution?: string;
-  links?: string[];
-  description: string;
-  severity: string;
-  warning?: boolean;
-  status?: number;
-  resource: string;
-  provider?: string;
-  title?: string;
-  location?: {
-    filename?: string;
-    start_line?: number;
-    end_line?: number;
+export type CloudConfig = Prisma.ConfigurationGetPayload<{
+  include: { issues: true };
+}>;
+
+export type SecurityIssue = Prisma.SecurityIssueGetPayload<{}>;
+
+export type Configuration = Prisma.ConfigurationGetPayload<{
+  include: {
+    issues: true;
   };
-}
+}>;
 
 interface AppSidebarProps {
   initialConfigs: CloudConfig[];

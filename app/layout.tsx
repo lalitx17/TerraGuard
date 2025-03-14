@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { PageHeader } from "@/components/page-header";
 import AppSidebar from "@/components/app-sidebar";
 import { QueryProvider } from "@/components/providers";
+import type { CloudConfig } from "@/types/config";
 
 const inter = Inter({ subsets: ["latin"] });
 

@@ -43,10 +43,3 @@ model SecurityIssue {
   updatedAt        DateTime      @updatedAt
   configuration    Configuration @relation(fields: [configurationId], references: [id])
 }
-
-enum Severity {
-  critical
-  high
-  medium
-  low
-}

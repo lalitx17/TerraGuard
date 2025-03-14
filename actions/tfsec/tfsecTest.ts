@@ -4,6 +4,7 @@ import { exec } from "child_process";
 import fs from "fs";
 import { promisify } from "util";
 import path from "path";
+import { storeTfsecResults } from "../database/insertIssues";
 
 const execPromise = promisify(exec);
 
@@ -42,6 +43,9 @@ export async function runTfsecScanAction(cloudId: string) {
 
     fs.mkdirSync(destinationDir, { recursive: true });
     fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
+
+    // Store results in the database
+    await storeTfsecResults(cloudId, results);
 
     return {
       success: true,

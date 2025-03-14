@@ -3,7 +3,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   try {
-    const configs = await prisma.configuration.findMany();
+    const configs = await prisma.configuration.findMany({
+      include: {
+        issues: true,
+      },
+    });
 
     return NextResponse.json(configs);
   } catch (error) {
