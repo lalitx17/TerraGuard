@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { CloudConfig, SecurityIssue } from "@/types/config";
+import { useContextForAI } from "@/hooks/use-aiContext";
 
 export default function CloudConfigPage() {
   const router = useRouter();
@@ -90,6 +91,32 @@ export default function CloudConfigPage() {
   const handleFixIssue = (issue: SecurityIssue) => {
     setSelectedIssue(issue);
     setIsFixDialogOpen(true);
+  };
+
+  const handleFixIssueWithAI = async (issue: SecurityIssue) => {
+    const params = new URLSearchParams({ issueId: issue.id });
+    const url = `/api/database/contextforai?${params}`;
+
+    const contextResponse = await fetch(url);
+    const contextData = await contextResponse.json();
+    const context = contextData.context;
+
+    if (context) {
+      const response = await fetch("/api/ollama", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "user",
+              content: `Please provide a fix for the following security issue:\n\n${context}`,
+            },
+          ],
+        }),
+      });
+    }
   };
 
   if (config.isPending) {
@@ -510,7 +537,14 @@ export default function CloudConfigPage() {
                   <Code className="mr-2 h-4 w-4" />
                   Edit Configuration Manually
                 </Button>
-                <Button className="w-full justify-start">
+                <Button
+                  className="w-full justify-start"
+                  onClick={() => {
+                    if (selectedIssue) {
+                      handleFixIssueWithAI(selectedIssue);
+                    }
+                  }}
+                >
                   <ShieldCheck className="mr-2 h-4 w-4" />
                   Apply Automatic Fix
                 </Button>

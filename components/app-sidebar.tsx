@@ -166,14 +166,6 @@ export default function AppSidebar({ initialConfigs }: AppSidebarProps) {
         <SidebarFooter>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={pathname === "/account"}>
-                <Link href="/account">
-                  <User />
-                  <span>Account</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname === "/settings"}>
                 <Link href="/settings">
                   <Settings />

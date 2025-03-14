@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { CreditCard, LogOut, Settings, User } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { CreditCard, LogOut, Settings, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,14 +13,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 
 export function UserNav() {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+      {/* <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src="/placeholder.svg?height=32&width=32" alt="@user" />
@@ -55,8 +55,7 @@ export function UserNav() {
           <LogOut className="mr-2 h-4 w-4" />
           <span>Log out</span>
         </DropdownMenuItem>
-      </DropdownMenuContent>
+      </DropdownMenuContent> */}
     </DropdownMenu>
-  )
+  );
 }
-

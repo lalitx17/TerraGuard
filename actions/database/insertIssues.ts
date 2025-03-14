@@ -2,18 +2,25 @@
 
 import { prisma } from "@/lib/prisma";
 
+interface SeverityCounts {
+  CRITICAL: number;
+  HIGH: number;
+  MEDIUM: number;
+  LOW: number;
+}
+
 export async function storeTfsecResults(cloudId: string, scanResults: any) {
   try {
-    // update the Configuration
+    const severityCounts = countSeverities(scanResults.results);
+
+    // Update the Configuration
     const configuration = await prisma.configuration.update({
       where: { id: cloudId },
       data: {
         isPending: false,
-        // criticalCount: scanResults.summary.count.critical || 0,
-        // highCount: scanResults.summary.count.high || 0,
-        // lowCount: scanResults.summary.count.low || 0,
-        // resources: scanResults.summary.scanned_resource_count || 0,
-        // SecurePercentage: calculateSecurePercentage(scanResults),
+        criticalCount: severityCounts.CRITICAL,
+        highCount: severityCounts.HIGH + severityCounts.MEDIUM,
+        lowCount: severityCounts.LOW,
       },
     });
 
@@ -47,13 +54,33 @@ export async function storeTfsecResults(cloudId: string, scanResults: any) {
   }
 }
 
-function calculateSecurePercentage(scanResults: any): number {
-  const totalIssues =
-    (scanResults.summary.critical_count || 0) +
-    (scanResults.summary.high_count || 0) +
-    (scanResults.summary.low_count || 0);
-  const totalResources = scanResults.summary.scanned_resource_count || 0;
+function countSeverities(issues: any[]): SeverityCounts {
+  const counts: SeverityCounts = {
+    CRITICAL: 0,
+    HIGH: 0,
+    MEDIUM: 0,
+    LOW: 0,
+  };
 
-  if (totalResources === 0) return 100;
-  return Math.round(((totalResources - totalIssues) / totalResources) * 100);
+  for (const issue of issues) {
+    const severity = issue.severity?.toUpperCase();
+    switch (severity) {
+      case "CRITICAL":
+        counts.CRITICAL++;
+        break;
+      case "HIGH":
+        counts.HIGH++;
+        break;
+      case "MEDIUM":
+        counts.MEDIUM++;
+        break;
+      case "LOW":
+        counts.LOW++;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return counts;
 }
