@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  Check,
+  ChevronDown,
+  ChevronRight,
   Code,
-  GitBranchPlus,
+  FileText,
+  Folder,
   GitCommit,
   GitPullRequest,
   Save,
@@ -14,9 +16,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CodeEditor } from "@/components/code-editor";
 import { useToast } from "@/hooks/use-toast";
+import { sampleConfigs } from "@/lib/sampleConfigFiles";
+import { useParams } from "next/navigation";
+import { useFolderStructure } from "@/hooks/useFolderStructure";
+
 import {
   Dialog,
   DialogContent,
@@ -27,115 +32,138 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useParams } from "next/navigation";
-import { sampleConfigs } from "@/lib/sampleConfigs";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const serviceIcons = {
+  folder: <Folder className="h-4 w-4" />,
+  file: <FileText className="h-4 w-4" />,
+};
+
+interface ServiceFiles {
+  [service: string]: {
+    [filename: string]: string;
+  };
+}
 
 export default function EditorPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
-  const [configFiles, setConfigFiles] = useState<Record<string, string>>({});
+  const [serviceFiles, setServiceFiles] = useState<ServiceFiles>({});
+  const [selectedService, setSelectedService] = useState<string>("");
   const [activeFile, setActiveFile] = useState<string>("");
   const [configName, setConfigName] = useState<string>("");
   const [provider, setProvider] = useState<string>("");
   const [isPushDialogOpen, setIsPushDialogOpen] = useState(false);
   const [commitMessage, setCommitMessage] = useState("");
-  const [branch, setBranch] = useState("main");
+  const [selectedPushService, setSelectedPushService] = useState<string>("");
   const [isPushing, setIsPushing] = useState(false);
+  const [expandedServices, setExpandedServices] = useState<
+    Record<string, boolean>
+  >({});
+
   const params = useParams();
 
   const { id } = params as { id: string };
 
-  // Get issue information from URL if coming from fix dialog
-  const issueResource = searchParams.get("resource");
-  const issueRuleId = searchParams.get("ruleId");
+  const { data: folderStructure } = useFolderStructure(id);
+
+  console.log(folderStructure);
 
   useEffect(() => {
-    const configId = id as string;
+    if (folderStructure) {
+      const newServiceFiles: ServiceFiles = {};
 
-    const providerFromId = configId.split("-")[0];
-
-    if (
-      providerFromId &&
-      sampleConfigs[providerFromId as keyof typeof sampleConfigs]
-    ) {
-      setProvider(providerFromId);
-      setConfigFiles(
-        sampleConfigs[providerFromId as keyof typeof sampleConfigs],
-      );
-
-      // If we have an issue resource, find the file that contains it
-      if (issueResource) {
-        // Find the file that contains the resource
-        const resourceName = issueResource.split(".").pop() || "";
-        let fileWithResource = "";
-
-        // For SQS issues, open the sqs.tf file
-
-        Object.entries(
-          sampleConfigs[providerFromId as keyof typeof sampleConfigs],
-        ).forEach(([filename, content]) => {
-          if (content.includes(resourceName)) {
-            fileWithResource = filename;
-          }
+      Object.entries(folderStructure).forEach(([provider, services]) => {
+        Object.entries(services).forEach(([service, files]) => {
+          newServiceFiles[service] = files;
         });
+      });
 
-        // Set the active file to the one containing the resource
-        if (fileWithResource) {
-          setActiveFile(fileWithResource);
-        } else {
-          setActiveFile(
-            Object.keys(
-              sampleConfigs[providerFromId as keyof typeof sampleConfigs],
-            )[0],
+      setServiceFiles(newServiceFiles);
+
+      const firstService = Object.keys(newServiceFiles)[0];
+      setSelectedService(firstService);
+      setSelectedPushService(firstService);
+
+      // Set the first file of the first service as active
+      const firstServiceFiles = newServiceFiles[firstService];
+      const firstFile = Object.keys(firstServiceFiles)[0];
+      setActiveFile(firstFile);
+
+      // Initialize all services as expanded
+      const initialExpandedState: Record<string, boolean> = {};
+      Object.keys(newServiceFiles).forEach((service) => {
+        initialExpandedState[service] = true;
+      });
+      setExpandedServices(initialExpandedState);
+
+      setConfigName(`${provider.toUpperCase()} Configuration`);
+    } else {
+      // Fallback to sample configurations if folderStructure is not available
+      const providerFromId = id.split("-")[0];
+
+      if (
+        providerFromId &&
+        sampleConfigs[providerFromId as keyof typeof sampleConfigs]
+      ) {
+        setProvider(providerFromId);
+        setServiceFiles(
+          sampleConfigs[providerFromId as keyof typeof sampleConfigs],
+        );
+
+        // Set the first service as selected by default for both editor and push dialog
+        const firstService = Object.keys(
+          sampleConfigs[providerFromId as keyof typeof sampleConfigs],
+        )[0];
+        setSelectedService(firstService);
+        setSelectedPushService(firstService);
+
+        // Set the first file of the first service as active
+        const firstServiceFiles =
+          sampleConfigs[providerFromId as keyof typeof sampleConfigs][
+            firstService
+          ];
+        const firstFile = Object.keys(firstServiceFiles)[0];
+        setActiveFile(firstFile);
+
+        // Initialize all services as expanded
+        const initialExpandedState: Record<string, boolean> = {};
+        Object.keys(
+          sampleConfigs[providerFromId as keyof typeof sampleConfigs],
+        ).forEach((service) => {
+          initialExpandedState[service] = true;
+        });
+        setExpandedServices(initialExpandedState);
+
+        setConfigName(`${providerFromId.toUpperCase()} Configuration`);
+
+        // Update page title
+        if (window.updatePageTitle) {
+          window.updatePageTitle(
+            `${providerFromId.toUpperCase()} Configuration - Editor`,
           );
         }
-
-        // Show a toast with the issue information
-        toast({
-          title: `Issue ${issueRuleId}`,
-          description: "Navigate to the highlighted resource to fix the issue.",
-        });
-      } else {
-        // Default to the first file
-        setActiveFile(
-          Object.keys(
-            sampleConfigs[providerFromId as keyof typeof sampleConfigs],
-          )[0],
-        );
-      }
-
-      // Set config name for the header
-      const configNames: Record<string, string> = {
-        "aws-prod": "AWS Production",
-        "azure-dev": "Azure Development",
-        "gcp-staging": "GCP Staging",
-        "aws-123": "Production AWS",
-        "azure-456": "Development Azure",
-      };
-
-      setConfigName(
-        configNames[configId] ||
-          `${providerFromId.toUpperCase()} Configuration`,
-      );
-
-      // Update page title
-      if (window.updatePageTitle) {
-        window.updatePageTitle(
-          `${configNames[configId] || `${providerFromId.toUpperCase()} Configuration`} - Editor`,
-        );
       }
     }
-  }, [params.id, issueResource, issueRuleId, searchParams, toast]);
+  }, [folderStructure, id]);
 
   const handleSaveFile = (content: string) => {
-    if (activeFile) {
-      setConfigFiles((prev) => ({
+    if (selectedService && activeFile) {
+      setServiceFiles((prev) => ({
         ...prev,
-        [activeFile]: content,
+        [selectedService]: {
+          ...prev[selectedService],
+          [activeFile]: content,
+        },
       }));
 
-      // In a real app, you would send this to your API
       toast({
         title: "File saved",
         description: `${activeFile} has been saved successfully.`,
@@ -144,7 +172,6 @@ export default function EditorPage() {
   };
 
   const handleSaveAll = () => {
-    // In a real app, you would save all files to your API
     toast({
       title: "All files saved",
       description: "All configuration files have been saved successfully.",
@@ -165,6 +192,15 @@ export default function EditorPage() {
       return;
     }
 
+    if (!selectedPushService) {
+      toast({
+        title: "Error",
+        description: "Please select a service to push",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsPushing(true);
 
     // Simulate pushing changes
@@ -175,12 +211,37 @@ export default function EditorPage() {
 
       toast({
         title: "Changes pushed",
-        description: `Changes have been pushed to ${branch} branch.`,
+        description: `Changes for ${formatServiceName(selectedPushService)} have been pushed to the cloud.`,
       });
     }, 2000);
   };
 
-  if (!activeFile || Object.keys(configFiles).length === 0) {
+  const toggleServiceExpanded = (service: string) => {
+    setExpandedServices((prev) => ({
+      ...prev,
+      [service]: !prev[service],
+    }));
+  };
+
+  const handleServiceSelect = (service: string) => {
+    setSelectedService(service);
+    // Select the first file in the service if the current active file is not in this service
+    if (!serviceFiles[service][activeFile]) {
+      const firstFile = Object.keys(serviceFiles[service])[0];
+      setActiveFile(firstFile);
+    }
+  };
+
+  const handleFileSelect = (service: string, file: string) => {
+    setSelectedService(service);
+    setActiveFile(file);
+  };
+
+  const formatServiceName = (service: string) => {
+    return service.charAt(0).toUpperCase() + service.slice(1);
+  };
+
+  if (Object.keys(serviceFiles).length === 0) {
     return (
       <div className="w-full py-6">
         <Container>
@@ -221,53 +282,89 @@ export default function EditorPage() {
 
       <div className="flex-1 overflow-hidden">
         <Container className="h-full py-0">
-          <div className="flex flex-col h-full">
-            <Tabs
-              value={activeFile}
-              onValueChange={setActiveFile}
-              className="flex flex-col h-full"
-            >
-              <div className="border-b bg-muted/40">
-                <TabsList className="h-10 w-full justify-start rounded-none bg-transparent">
-                  {Object.keys(configFiles).map((filename) => (
-                    <TabsTrigger
-                      key={filename}
-                      value={filename}
-                      className="data-[state=active]:bg-background rounded-none border-r px-4 py-2 h-10"
-                    >
-                      {filename}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
+          <div className="flex h-full">
+            {/* Service Navigation Sidebar */}
+            <div className="w-64 border-r overflow-y-auto">
+              <div className="p-2">
+                <h3 className="text-sm font-medium mb-2">Services</h3>
+                <div className="space-y-1">
+                  {Object.keys(serviceFiles).map((service) => (
+                    <div key={service} className="text-sm">
+                      <button
+                        className="flex items-center w-full hover:bg-muted rounded-md p-1.5 text-left"
+                        onClick={() => toggleServiceExpanded(service)}
+                      >
+                        {expandedServices[service] ? (
+                          <ChevronDown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+                        )}
+                        <span className="flex items-center">
+                          {serviceIcons.folder}
+                          <span className="ml-1.5">
+                            {formatServiceName(service)}
+                          </span>
+                        </span>
+                      </button>
 
-              <div className="flex-1 overflow-hidden">
-                {Object.entries(configFiles).map(([filename, content]) => (
-                  <TabsContent
-                    key={filename}
-                    value={filename}
-                    className="h-full mt-0 border-none p-0 data-[state=active]:flex-1"
-                  >
+                      {expandedServices[service] && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {Object.keys(serviceFiles[service]).map((file) => (
+                            <button
+                              key={file}
+                              className={cn(
+                                "flex items-center w-full hover:bg-muted rounded-md p-1.5 text-left text-sm",
+                                selectedService === service &&
+                                  activeFile === file &&
+                                  "bg-muted font-medium",
+                              )}
+                              onClick={() => handleFileSelect(service, file)}
+                            >
+                              {serviceIcons.file}
+                              <span className="ml-1.5">{file}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Editor Area */}
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {selectedService && activeFile && (
+                <>
+                  <div className="border-b bg-muted/40 px-4 py-2 flex-shrink-0">
+                    <div className="flex items-center text-sm">
+                      <span className="text-muted-foreground mr-2">
+                        {formatServiceName(selectedService)} /
+                      </span>
+                      <span className="font-medium">{activeFile}</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
                     <CodeEditor
-                      initialValue={content}
+                      initialValue={serviceFiles[selectedService][activeFile]}
                       language={
-                        filename.endsWith(".tf") || filename.endsWith(".hcl")
+                        activeFile.endsWith(".tf") ||
+                        activeFile.endsWith(".hcl")
                           ? "terraform"
-                          : filename.endsWith(".json")
+                          : activeFile.endsWith(".json")
                             ? "json"
-                            : filename.endsWith(".yaml") ||
-                                filename.endsWith(".yml")
+                            : activeFile.endsWith(".yaml") ||
+                                activeFile.endsWith(".yml")
                               ? "yaml"
                               : "plaintext"
                       }
                       onSave={handleSaveFile}
                       height="100%"
-                      highlightResource={issueResource}
                     />
-                  </TabsContent>
-                ))}
-              </div>
-            </Tabs>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </Container>
       </div>
@@ -278,10 +375,6 @@ export default function EditorPage() {
             <div className="flex items-center gap-1">
               <Code className="h-3 w-3" />
               <span>{provider.toUpperCase()}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <GitBranchPlus className="h-3 w-3" />
-              <span>main</span>
             </div>
           </div>
           <div>
@@ -295,18 +388,29 @@ export default function EditorPage() {
           <DialogHeader>
             <DialogTitle>Push Changes</DialogTitle>
             <DialogDescription>
-              Enter a commit message and push your changes to the repository.
+              Select a service and enter a commit message to push your changes
+              to the cloud.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="branch">Branch</Label>
-              <Input
-                id="branch"
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
+              <Label htmlFor="service">Service to Push</Label>
+              <Select
+                value={selectedPushService}
+                onValueChange={setSelectedPushService}
                 disabled={isPushing}
-              />
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a service" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.keys(serviceFiles).map((service) => (
+                    <SelectItem key={service} value={service}>
+                      {formatServiceName(service)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="commit-message">Commit Message</Label>

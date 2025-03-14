@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Editor, { Monaco } from "@monaco-editor/react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import Editor, { type Monaco } from "@monaco-editor/react";
 import { Loader2 } from "lucide-react";
-import { editor } from "monaco-editor";
+import type { editor } from "monaco-editor";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,13 +30,14 @@ export function CodeEditor({
   height = "70vh",
   onSave,
   readOnly = false,
-  highlightResource = null,
 }: CodeEditorProps) {
   const { toast } = useToast();
   const [value, setValue] = useState(initialValue);
   const [selectedLanguage, setSelectedLanguage] = useState(language);
   const [isLoading, setIsLoading] = useState(true);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleEditorDidMount = (
     editor: editor.IStandaloneCodeEditor,
@@ -69,7 +70,7 @@ export function CodeEditor({
       lineNumbers: "on",
       readOnly: readOnly,
       wordWrap: "on",
-      automaticLayout: true,
+      automaticLayout: false, // Disable automatic layout to prevent ResizeObserver loops
       scrollbar: {
         verticalScrollbarSize: 12,
         horizontalScrollbarSize: 12,
@@ -94,46 +95,45 @@ export function CodeEditor({
       }
     });
 
-    // If we have a resource to highlight, find and highlight it
-    if (highlightResource) {
-      const resourceName = highlightResource.split(".").pop() || "";
-      const text = editor.getValue();
-      const lines = text.split("\n");
-
-      // Find the line that contains the resource
-      let lineNumber = -1;
-      for (let i = 0; i < lines.length; i++) {
-        if (lines[i].includes(resourceName) && lines[i].includes("resource")) {
-          lineNumber = i + 1; // Monaco editor lines are 1-based
-          break;
-        }
-      }
-
-      // If we found the line, highlight it
-      if (lineNumber > 0) {
-        // Add a decoration to highlight the line
-        const decorations = editor.deltaDecorations(
-          [],
-          [
-            {
-              range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-              options: {
-                isWholeLine: true,
-                className: "bg-yellow-100 dark:bg-yellow-900/30",
-                glyphMarginClassName: "bg-yellow-500",
-                glyphMarginHoverMessage: {
-                  value: "This resource needs to be fixed",
-                },
-              },
-            },
-          ],
-        );
-
-        // Scroll to the line
-        editor.revealLineInCenter(lineNumber);
-      }
-    }
+    // Handle initial layout
+    setTimeout(() => {
+      editor.layout();
+    }, 100);
   };
+
+  // Handle resize with debouncing
+  const handleResize = useCallback(() => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+
+    resizeTimeoutRef.current = setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.layout();
+      }
+    }, 100);
+  }, []);
+
+  // Set up resize observer
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver(() => {
+      handleResize();
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [handleResize]);
 
   const handleSave = () => {
     if (onSave && editorRef.current) {
@@ -206,7 +206,11 @@ export function CodeEditor({
         </Button>
       </div>
 
-      <div className="relative flex-1 overflow-hidden" style={{ height }}>
+      <div
+        ref={containerRef}
+        className="relative flex-1 overflow-hidden"
+        style={{ height }}
+      >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

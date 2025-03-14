@@ -15,3 +15,11 @@ export type Configuration = Prisma.ConfigurationGetPayload<{
 interface AppSidebarProps {
   initialConfigs: CloudConfig[];
 }
+
+interface ServiceFiles {
+  [service: string]: {
+    [category: string]: {
+      [filename: string]: string;
+    };
+  };
+}
