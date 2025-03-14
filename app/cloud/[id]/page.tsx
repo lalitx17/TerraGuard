@@ -38,7 +38,6 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { CloudConfig, SecurityIssue } from "@/types/config";
-import { useContextForAI } from "@/hooks/use-aiContext";
 
 export default function CloudConfigPage() {
   const router = useRouter();
@@ -49,6 +48,9 @@ export default function CloudConfigPage() {
     null,
   );
   const [isFixDialogOpen, setIsFixDialogOpen] = useState(false);
+  const [isAIResponseDialogOpen, setIsAIResponseDialogOpen] = useState(false);
+  const [aiResponse, setAiResponse] = useState("");
+
   const { id } = params as { id: string };
 
   const { data: configuration, isLoading, isError } = useConfigurationById(id);
@@ -88,6 +90,27 @@ export default function CloudConfigPage() {
     );
   }
 
+  function formatHCL(code: string) {
+    return code
+      .replace(/```hcl/g, "")
+      .replace(/```/g, "")
+      .replace(/\{/g, "{\n  ")
+      .replace(/\}/g, "\n}")
+      .replace(/=/g, " = ")
+      .replace(/,/g, ",\n  ")
+      .trim();
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+    // Optionally show a success message
+  }
+
+  function handleApprove(formattedCode: string) {
+    // Implement logic to approve and use the formatted code
+    setIsAIResponseDialogOpen(false);
+  }
+
   const handleFixIssue = (issue: SecurityIssue) => {
     setSelectedIssue(issue);
     setIsFixDialogOpen(true);
@@ -116,6 +139,10 @@ export default function CloudConfigPage() {
           ],
         }),
       });
+
+      const responseData = await response.json();
+      setAiResponse(responseData.response);
+      setIsAIResponseDialogOpen(true);
     }
   };
 
@@ -555,6 +582,36 @@ export default function CloudConfigPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsFixDialogOpen(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isAIResponseDialogOpen}
+        onOpenChange={setIsAIResponseDialogOpen}
+      >
+        <DialogContent className="max-w-2xl p-6 overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Formatted HCL Code</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto max-h-[60vh]">
+              <code>{formatHCL(aiResponse)}</code>
+            </pre>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => copyToClipboard(formatHCL(aiResponse))}>
+              Copy
+            </Button>
+            <Button onClick={() => handleApprove(formatHCL(aiResponse))}>
+              Approve
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsAIResponseDialogOpen(false)}
+            >
+              Decline
             </Button>
           </DialogFooter>
         </DialogContent>
