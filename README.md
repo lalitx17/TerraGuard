@@ -34,7 +34,7 @@ To install and set up TerraGuard locally, follow these steps:
 ### Prerequisites
 - Node.js (>= 16.x)
 - npm or yarn
-- Docker (optional, for containerized deployment)
+- tfsec (for IaC scanning)
 - Terraform (for IaC scanning)
 - Terraformer (for importing cloud configurations)
 
