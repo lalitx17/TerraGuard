@@ -9,9 +9,9 @@ import {
   Code,
   FileText,
   Folder,
-  GitCommit,
-  GitPullRequest,
   Save,
+  Loader2,
+  CloudUpload,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -67,6 +67,9 @@ export default function EditorPage() {
   const [expandedServices, setExpandedServices] = useState<
     Record<string, boolean>
   >({});
+  const [accessKey, setAccessKey] = useState("");
+  const [secretKey, setSecretKey] = useState("");
+  const [region, setRegion] = useState("us-west-2");
 
   const params = useParams();
 
@@ -164,6 +167,25 @@ export default function EditorPage() {
         },
       }));
 
+      const response = fetch("/api/database/filesave", {
+        method: "POST",
+        body: JSON.stringify({
+          cloudId: id,
+          folderName: selectedService,
+          fileName: activeFile,
+          content,
+        }),
+      });
+
+      if (!response) {
+        toast({
+          title: "Error",
+          description: "Failed to save the file",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "File saved",
         description: `${activeFile} has been saved successfully.`,
@@ -171,49 +193,67 @@ export default function EditorPage() {
     }
   };
 
-  const handleSaveAll = () => {
-    toast({
-      title: "All files saved",
-      description: "All configuration files have been saved successfully.",
-    });
-  };
-
   const handlePushChanges = () => {
     setIsPushDialogOpen(true);
   };
 
+  const formatServiceName = (service: string) => {
+    return service.charAt(0).toUpperCase() + service.slice(1);
+  };
+
   const submitPushChanges = () => {
-    if (!commitMessage.trim()) {
+    if (!selectedPushService) {
       toast({
         title: "Error",
-        description: "Please enter a commit message",
+        description: "Please select a service to apply",
         variant: "destructive",
       });
       return;
     }
 
-    if (!selectedPushService) {
+    if (!accessKey || !secretKey || !region) {
       toast({
         title: "Error",
-        description: "Please select a service to push",
+        description: "Please provide all required credentials",
         variant: "destructive",
       });
       return;
     }
 
     setIsPushing(true);
+    const response = fetch("/api/terraformapply", {
+      method: "POST",
+      body: JSON.stringify({
+        service: selectedPushService,
+        cloudId: id,
+        awsAccessKey: accessKey,
+        awsSecretKey: secretKey,
+        region,
+      }),
+    });
 
-    // Simulate pushing changes
-    setTimeout(() => {
+    console.log(response);
+
+    // Clear sensitive data
+    setAccessKey("");
+    setSecretKey("");
+    setRegion("");
+
+    if (!response) {
+      toast({
+        title: "Error",
+        description: "Failed to apply changes",
+        variant: "destructive",
+      });
+
       setIsPushing(false);
       setIsPushDialogOpen(false);
-      setCommitMessage("");
 
       toast({
-        title: "Changes pushed",
-        description: `Changes for ${formatServiceName(selectedPushService)} have been pushed to the cloud.`,
+        title: "Changes applied",
+        description: `Terraform changes for ${formatServiceName(selectedPushService)} have been applied to the cloud.`,
       });
-    }, 2000);
+    }
   };
 
   const toggleServiceExpanded = (service: string) => {
@@ -235,10 +275,6 @@ export default function EditorPage() {
   const handleFileSelect = (service: string, file: string) => {
     setSelectedService(service);
     setActiveFile(file);
-  };
-
-  const formatServiceName = (service: string) => {
-    return service.charAt(0).toUpperCase() + service.slice(1);
   };
 
   if (Object.keys(serviceFiles).length === 0) {
@@ -267,13 +303,9 @@ export default function EditorPage() {
               <h2 className="text-xl font-bold">{configName} - Editor</h2>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleSaveAll}>
-                <Save className="mr-2 h-4 w-4" />
-                Save All
-              </Button>
               <Button onClick={handlePushChanges}>
-                <GitCommit className="mr-2 h-4 w-4" />
-                Push Changes
+                <CloudUpload className="mr-2 h-4 w-4" />
+                Apply Changes
               </Button>
             </div>
           </div>
@@ -386,15 +418,15 @@ export default function EditorPage() {
       <Dialog open={isPushDialogOpen} onOpenChange={setIsPushDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Push Changes</DialogTitle>
+            <DialogTitle>Apply Terraform Changes</DialogTitle>
             <DialogDescription>
-              Select a service and enter a commit message to push your changes
-              to the cloud.
+              Provide your cloud credentials to apply the Terraform changes to
+              your infrastructure.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="service">Service to Push</Label>
+              <Label htmlFor="service">Service to Apply</Label>
               <Select
                 value={selectedPushService}
                 onValueChange={setSelectedPushService}
@@ -413,12 +445,33 @@ export default function EditorPage() {
               </Select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="commit-message">Commit Message</Label>
+              <Label htmlFor="access-key">Access Key</Label>
               <Input
-                id="commit-message"
-                placeholder="Update configuration files"
-                value={commitMessage}
-                onChange={(e) => setCommitMessage(e.target.value)}
+                id="access-key"
+                placeholder="AKIAIOSFODNN7EXAMPLE"
+                value={accessKey}
+                onChange={(e) => setAccessKey(e.target.value)}
+                disabled={isPushing}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="secret-key">Secret Key</Label>
+              <Input
+                id="secret-key"
+                type="password"
+                placeholder="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+                value={secretKey}
+                onChange={(e) => setSecretKey(e.target.value)}
+                disabled={isPushing}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="region">Region</Label>
+              <Input
+                id="region"
+                placeholder="us-west-2"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
                 disabled={isPushing}
               />
             </div>
@@ -434,13 +487,13 @@ export default function EditorPage() {
             <Button onClick={submitPushChanges} disabled={isPushing}>
               {isPushing ? (
                 <>
-                  <GitPullRequest className="mr-2 h-4 w-4 animate-spin" />
-                  Pushing...
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
                 </>
               ) : (
                 <>
-                  <GitCommit className="mr-2 h-4 w-4" />
-                  Push
+                  <CloudUpload className="mr-2 h-4 w-4" />
+                  Apply
                 </>
               )}
             </Button>

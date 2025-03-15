@@ -45,6 +45,8 @@ export async function getFolderStructure(cloudId: string) {
       }
     }
 
+    console.log(folderStructure);
+
     return folderStructure;
   } catch (error) {
     console.error("Error reading folder structure:", error);
