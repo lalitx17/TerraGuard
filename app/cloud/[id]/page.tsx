@@ -187,7 +187,7 @@ export default function CloudConfigPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -230,7 +230,7 @@ export default function CloudConfigPage() {
               </p>
             </CardContent>
           </Card>
-          <Card>
+          {/* <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
                 Secure Resources
@@ -243,7 +243,7 @@ export default function CloudConfigPage() {
               </div>
               <Progress value={config.SecurePercentage} className="mt-2" />
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         <Tabs defaultValue="all" className="mt-6">
@@ -604,9 +604,9 @@ export default function CloudConfigPage() {
             <Button onClick={() => copyToClipboard(formatHCL(aiResponse))}>
               Copy
             </Button>
-            <Button onClick={() => handleApprove(formatHCL(aiResponse))}>
+            {/* <Button onClick={() => handleApprove(formatHCL(aiResponse))}>
               Approve
-            </Button>
+            </Button> */}
             <Button
               variant="outline"
               onClick={() => setIsAIResponseDialogOpen(false)}
