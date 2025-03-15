@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 import { useParams } from "next/navigation";
+import { CloudConfig } from "@/types/config";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -456,6 +457,7 @@ export function AddCredentialsDialog({
       }
     }
 
+    router.refresh();
     setIsLoading(false);
     setIsSuccess(isValid);
   };
